@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Hilot POS">
+<title>Hilot Healing Hands — POS</title>
+<style>
+  :root {
+    --teal:#1D9E75;--teal-light:#E1F5EE;--teal-dark:#085041;--teal-mid:#0F6E56;
+    --amber:#BA7517;--amber-light:#FAEEDA;--amber-mid:#EF9F27;
+    --coral:#D85A30;--coral-light:#FAECE7;
+    --gray:#888780;--gray-light:#F1EFE8;--gray-dark:#2C2C2A;
+    --text:#1a1a1a;--text2:#5F5E5A;--text3:#888780;
+    --bg:#FAF9F6;--surface:#FFFFFF;--border:rgba(0,0,0,0.1);
+    --radius:14px;--radius-sm:8px;
+    --font:'Georgia',serif;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+  .screen{display:none;min-height:100vh;}
+  .screen.active{display:flex;flex-direction:column;}
+  .topbar{background:var(--teal-dark);color:white;padding:14px 20px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .topbar-title{font-family:var(--font);font-size:18px;font-weight:normal;letter-spacing:0.5px;}
+  .topbar-sub{font-size:11px;opacity:0.7;margin-top:2px;}
+  .topbar-right{font-size:22px;cursor:pointer;background:none;border:none;color:white;padding:4px;}
+  .pos-layout{display:flex;flex:1;overflow:hidden;}
+  .services-panel{flex:1;overflow-y:auto;padding:16px;}
+  .cart-panel{width:300px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;}
+  .cat-tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;}
+  .cat-tabs::-webkit-scrollbar{display:none;}
+  .cat-tab{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:500;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;white-space:nowrap;transition:all 0.15s;}
+  .cat-tab.active{background:var(--teal);color:white;border-color:var(--teal);}
+  .services-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .svc-card{background:white;border-radius:var(--radius);padding:14px 12px;border:1px solid var(--border);cursor:pointer;transition:all 0.15s;position:relative;overflow:hidden;}
+  .svc-card:active{transform:scale(0.97);background:var(--teal-light);}
+  .svc-card-icon{font-size:24px;margin-bottom:7px;}
+  .svc-card-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:3px;line-height:1.3;}
+  .svc-card-dur{font-size:11px;color:var(--text3);margin-bottom:5px;}
+  .svc-card-price{font-size:16px;font-weight:700;color:var(--teal-mid);}
+  .cart-header{padding:16px;border-bottom:1px solid var(--border);}
+  .cart-title{font-size:15px;font-weight:600;color:var(--text);}
+  .cart-count{font-size:12px;color:var(--text3);margin-top:2px;}
+  .cart-items{flex:1;overflow-y:auto;padding:8px 0;}
+  .cart-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text3);padding:20px;text-align:center;}
+  .cart-empty-icon{font-size:36px;opacity:0.4;}
+  .cart-item{padding:10px 16px;border-bottom:1px solid rgba(0,0,0,0.05);}
+  .cart-item-row{display:flex;justify-content:space-between;align-items:flex-start;}
+  .cart-item-name{font-size:13px;font-weight:500;flex:1;line-height:1.3;}
+  .cart-item-price{font-size:13px;font-weight:600;color:var(--teal-mid);margin-left:8px;}
+  .cart-item-controls{display:flex;align-items:center;gap:6px;margin-top:6px;}
+  .qty-btn{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:white;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);}
+  .qty-btn:active{background:var(--gray-light);}
+  .qty-val{font-size:14px;font-weight:600;min-width:20px;text-align:center;}
+  .cart-item-sub{font-size:11px;color:var(--text3);margin-top:1px;}
+  .cart-footer{padding:14px 16px;border-top:1px solid var(--border);}
+  .cart-line{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:6px;}
+  .cart-total{display:flex;justify-content:space-between;font-size:17px;font-weight:700;color:var(--text);margin:10px 0;}
+  .btn-charge{width:100%;padding:14px;border-radius:var(--radius-sm);border:none;background:var(--teal);color:white;font-size:16px;font-weight:600;cursor:pointer;transition:background 0.15s;}
+  .btn-charge:active{background:var(--teal-dark);}
+  .btn-charge:disabled{background:var(--gray);cursor:not-allowed;}
+  .btn-clear{width:100%;padding:9px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:white;color:var(--text2);font-size:13px;cursor:pointer;margin-top:7px;}
+  .pay-screen{padding:20px;flex:1;overflow-y:auto;}
+  .pay-title{font-family:var(--font);font-size:22px;color:var(--teal-dark);margin-bottom:4px;}
+  .pay-amount{font-size:40px;font-weight:700;color:var(--text);margin:12px 0 20px;}
+  .pay-amount span{font-size:22px;font-weight:400;color:var(--text2);}
+  .section-label{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--text3);text-transform:uppercase;margin-bottom:10px;}
+  .pay-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+  .pay-method{padding:14px 10px;border-radius:var(--radius-sm);border:2px solid var(--border);background:white;text-align:center;cursor:pointer;transition:all 0.15s;}
+  .pay-method.selected{border-color:var(--teal);background:var(--teal-light);}
+  .pay-method-icon{font-size:24px;margin-bottom:6px;}
+  .pay-method-name{font-size:13px;font-weight:600;}
+  .pay-method-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+  .cash-input-area{background:white;border-radius:var(--radius-sm);border:1px solid var(--border);padding:14px;margin-bottom:20px;}
+  .cash-input-row{display:flex;align-items:center;gap:12px;}
+  .cash-input-label{font-size:13px;color:var(--text2);min-width:60px;}
+  .cash-input{flex:1;border:none;border-bottom:2px solid var(--teal);padding:6px 4px;font-size:22px;font-weight:700;color:var(--text);background:transparent;outline:none;}
+  .change-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+  .change-label{font-size:13px;color:var(--text2);}
+  .change-amount{font-size:22px;font-weight:700;color:var(--teal-mid);}
+  .btn-confirm{width:100%;padding:16px;border-radius:var(--radius-sm);border:none;background:var(--teal);color:white;font-size:17px;font-weight:700;cursor:pointer;margin-top:8px;transition:background 0.15s;}
+  .btn-confirm:active{background:var(--teal-dark);}
+  .btn-back{padding:10px 0;border:none;background:none;color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;gap:6px;margin-bottom:16px;}
+  .order-summary-mini{background:var(--gray-light);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:24px;}
+  .order-mini-item{display:flex;justify-content:space-between;font-size:13px;color:var(--text2);margin-bottom:4px;}
+  .order-mini-item.total{font-weight:700;color:var(--text);border-top:1px solid var(--border);padding-top:8px;margin-top:4px;font-size:14px;}
+  .receipt-wrap{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;align-items:center;}
+  .receipt{background:white;border-radius:var(--radius);border:1px solid var(--border);padding:24px 20px;width:100%;max-width:380px;}
+  .receipt-logo{text-align:center;margin-bottom:16px;}
+  .receipt-logo-name{font-family:var(--font);font-size:22px;color:var(--teal-dark);}
+  .receipt-logo-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+  .receipt-divider{border:none;border-top:1px dashed var(--border);margin:14px 0;}
+  .receipt-row{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+  .receipt-row.bold{font-weight:700;font-size:15px;color:var(--text);}
+  .receipt-row.meta{color:var(--text3);font-size:11px;}
+  .receipt-total-box{background:var(--teal-light);border-radius:var(--radius-sm);padding:12px 14px;margin:14px 0;text-align:center;}
+  .receipt-paid{font-size:28px;font-weight:700;color:var(--teal-dark);}
+  .receipt-paid-label{font-size:11px;color:var(--teal-mid);text-transform:uppercase;letter-spacing:0.5px;}
+  .receipt-thanks{text-align:center;font-family:var(--font);font-style:italic;color:var(--text3);font-size:14px;margin:12px 0;}
+  .btn-new-sale{width:100%;max-width:380px;padding:16px;border-radius:var(--radius-sm);border:none;background:var(--teal);color:white;font-size:17px;font-weight:700;cursor:pointer;margin-top:16px;transition:background 0.15s;}
+  .btn-new-sale:active{background:var(--teal-dark);}
+  .btn-print{width:100%;max-width:380px;padding:12px;border-radius:var(--radius-sm);border:1.5px solid var(--teal);background:white;color:var(--teal);font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;}
+  .reports-wrap{flex:1;overflow-y:auto;padding:16px;}
+  .metric-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+  .metric-card{background:white;border-radius:var(--radius-sm);padding:14px;border:1px solid var(--border);}
+  .metric-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+  .metric-value{font-size:24px;font-weight:700;color:var(--text);}
+  .metric-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+  .txn-list{background:white;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+  .txn-item{padding:12px 16px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;justify-content:space-between;align-items:center;}
+  .txn-item:last-child{border-bottom:none;}
+  .txn-time{font-size:13px;font-weight:500;color:var(--text);}
+  .txn-items{font-size:11px;color:var(--text3);margin-top:2px;}
+  .txn-pay{font-size:11px;color:var(--text2);margin-top:1px;}
+  .txn-total{font-size:16px;font-weight:700;color:var(--teal-mid);}
+  .section-header{font-size:14px;font-weight:600;color:var(--text);margin:16px 0 10px;}
+  .reports-period{display:flex;gap:8px;margin-bottom:16px;}
+  .period-btn{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:white;color:var(--text2);cursor:pointer;}
+  .period-btn.active{background:var(--teal);color:white;border-color:var(--teal);}
+  .empty-txn{text-align:center;padding:30px;color:var(--text3);font-size:14px;}
+  .settings-wrap{flex:1;overflow-y:auto;padding:16px;}
+  .settings-section{background:white;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:16px;}
+  .settings-row{padding:14px 16px;border-bottom:1px solid rgba(0,0,0,0.05);display:flex;justify-content:space-between;align-items:center;}
+  .settings-row:last-child{border-bottom:none;}
+  .settings-label{font-size:14px;font-weight:500;color:var(--text);}
+  .settings-sub{font-size:12px;color:var(--text3);margin-top:2px;}
+  .settings-input{border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:14px;color:var(--text);min-width:120px;background:var(--bg);outline:none;text-align:right;}
+  .settings-input:focus{border-color:var(--teal);}
+  .toggle{width:44px;height:26px;border-radius:13px;border:none;cursor:pointer;transition:background 0.2s;padding:3px;display:flex;align-items:center;}
+  .toggle.on{background:var(--teal);justify-content:flex-end;}
+  .toggle.off{background:var(--gray);justify-content:flex-start;}
+  .toggle-thumb{width:20px;height:20px;background:white;border-radius:50%;}
+  .bottom-nav{background:white;border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);}
+  .nav-btn{flex:1;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;border:none;background:none;cursor:pointer;color:var(--text3);transition:color 0.15s;}
+  .nav-btn.active{color:var(--teal);}
+  .nav-icon{font-size:22px;}
+  .nav-label{font-size:10px;font-weight:500;}
+  .therapist-selector{margin-bottom:14px;}
+  .therapist-selector select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:white;outline:none;color:var(--text);}
+  .therapist-selector select:focus{border-color:var(--teal);}
+  .discount-row{display:flex;gap:8px;align-items:center;margin:8px 0;}
+  .disc-btn{padding:5px 10px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:white;cursor:pointer;color:var(--text2);}
+  .disc-btn.active{background:var(--amber-light);border-color:var(--amber);color:var(--amber);}
+  .disc-input{border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;width:70px;outline:none;}
+  .disc-input:focus{border-color:var(--amber);}
+  /* multi-price badge */
+  .svc-card-prices{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+  .price-pill{font-size:11px;background:var(--teal-light);color:var(--teal-mid);border-radius:10px;padding:2px 7px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all 0.12s;}
+  .price-pill:active,.price-pill.tapped{background:var(--teal);color:white;}
+  @media(max-width:700px){
+    .pos-layout{flex-direction:column;}
+    .cart-panel{width:100%;border-left:none;border-top:1px solid var(--border);max-height:42vh;}
+    .services-panel{max-height:58vh;overflow-y:auto;padding:12px;}
+    .services-grid{grid-template-columns:repeat(2,1fr);}
+    .cart-footer{padding:10px 12px;}
+  }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .screen.active{animation:fadeIn 0.2s ease;}
+</style>
+</head>
+<body>
+
+<!-- POS -->
+<div class="screen active" id="screen-pos">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">Hilot Healing Hands</div>
+      <div class="topbar-sub" id="pos-date-display"></div>
+    </div>
+    <button class="topbar-right" onclick="showScreen('screen-settings')">⚙</button>
+  </div>
+  <div class="pos-layout">
+    <div class="services-panel">
+      <div class="cat-tabs" id="cat-tabs"></div>
+      <div class="therapist-selector"><select id="therapist-select"></select></div>
+      <div class="services-grid" id="services-grid"></div>
+    </div>
+    <div class="cart-panel">
+      <div class="cart-header">
+        <div class="cart-title">Current Order</div>
+        <div class="cart-count" id="cart-count-label">No items</div>
+      </div>
+      <div id="cart-body" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+        <div class="cart-empty" id="cart-empty-msg">
+          <div class="cart-empty-icon">🌿</div>
+          <div style="font-size:14px;font-weight:500;">Cart is empty</div>
+          <div style="font-size:12px;">Tap a service to add it</div>
+        </div>
+        <div class="cart-items" id="cart-items-list" style="display:none;"></div>
+      </div>
+      <div class="cart-footer">
+        <div class="discount-row">
+          <span style="font-size:12px;color:var(--text3);">Discount:</span>
+          <button class="disc-btn" id="disc-pct-btn" onclick="toggleDiscount('pct')">%</button>
+          <button class="disc-btn" id="disc-flat-btn" onclick="toggleDiscount('flat')">₱ Off</button>
+          <input type="number" class="disc-input" id="disc-value-input" placeholder="0" min="0" onchange="recalcCart()" oninput="recalcCart()" style="display:none">
+        </div>
+        <div class="cart-line" id="cart-subtotal-row" style="display:none"><span>Subtotal</span><span id="cart-subtotal">₱0</span></div>
+        <div class="cart-line" id="cart-disc-row" style="display:none;color:var(--coral)"><span id="cart-disc-label">Discount</span><span id="cart-disc-amount">-₱0</span></div>
+        <div class="cart-total"><span>Total</span><span id="cart-total">₱0</span></div>
+        <button class="btn-charge" id="btn-charge" onclick="goToPayment()" disabled>Charge ₱0</button>
+        <button class="btn-clear" onclick="clearCart()">Clear Order</button>
+      </div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" onclick="showScreen('screen-pos')"><div class="nav-icon">🧾</div><div class="nav-label">New Sale</div></button>
+    <button class="nav-btn" onclick="showScreen('screen-reports')"><div class="nav-icon">📊</div><div class="nav-label">Reports</div></button>
+    <button class="nav-btn" onclick="showScreen('screen-settings')"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
+  </div>
+</div>
+
+<!-- PAYMENT -->
+<div class="screen" id="screen-payment">
+  <div class="topbar"><div><div class="topbar-title">Payment</div><div class="topbar-sub">Complete the transaction</div></div></div>
+  <div class="pay-screen">
+    <button class="btn-back" onclick="showScreen('screen-pos')">← Back to Order</button>
+    <div class="section-label">Order Summary</div>
+    <div class="order-summary-mini" id="pay-order-summary"></div>
+    <div class="pay-title">Amount Due</div>
+    <div class="pay-amount" id="pay-total-display"><span>₱</span>0</div>
+    <div class="section-label">Payment Method</div>
+    <div class="pay-methods" id="pay-methods-grid">
+      <div class="pay-method selected" data-method="cash" onclick="selectPayMethod(this)"><div class="pay-method-icon">💵</div><div class="pay-method-name">Cash</div></div>
+      <div class="pay-method" data-method="card" onclick="selectPayMethod(this)"><div class="pay-method-icon">💳</div><div class="pay-method-name">Card</div><div class="pay-method-sub">Swipe / Tap</div></div>
+      <div class="pay-method" data-method="gcash" onclick="selectPayMethod(this)"><div class="pay-method-icon">📱</div><div class="pay-method-name">GCash</div></div>
+      <div class="pay-method" data-method="paymaya" onclick="selectPayMethod(this)"><div class="pay-method-icon">📲</div><div class="pay-method-name">PayMaya</div></div>
+    </div>
+    <div id="cash-section">
+      <div class="section-label">Cash Tendered</div>
+      <div class="cash-input-area">
+        <div class="cash-input-row">
+          <span class="cash-input-label">Received</span>
+          <input type="number" class="cash-input" id="cash-tendered" placeholder="0" min="0" oninput="calcChange()">
+          <span style="font-size:18px;font-weight:700;color:var(--text2);">₱</span>
+        </div>
+        <div id="quick-cash-btns" style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;"></div>
+        <div class="change-row" id="change-row" style="display:none">
+          <span class="change-label">Change</span>
+          <span class="change-amount" id="change-display">₱0</span>
+        </div>
+      </div>
+    </div>
+    <div id="digital-section" style="display:none">
+      <div class="section-label">Reference Number (optional)</div>
+      <input type="text" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;outline:none;margin-bottom:16px;" id="ref-number" placeholder="Transaction / Reference #">
+    </div>
+    <button class="btn-confirm" onclick="confirmPayment()">Confirm Payment</button>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div class="screen" id="screen-receipt">
+  <div class="topbar"><div><div class="topbar-title">Receipt</div><div class="topbar-sub">Transaction Complete</div></div></div>
+  <div class="receipt-wrap">
+    <div class="receipt" id="receipt-content">
+      <div class="receipt-logo">
+        <div class="receipt-logo-name">Hilot Healing Hands</div>
+        <div class="receipt-logo-sub" id="receipt-clinic-sub">The Ancient Art of Healing</div>
+      </div>
+      <hr class="receipt-divider">
+      <div id="receipt-meta"></div>
+      <hr class="receipt-divider">
+      <div id="receipt-items"></div>
+      <hr class="receipt-divider">
+      <div id="receipt-totals"></div>
+      <div class="receipt-total-box">
+        <div class="receipt-paid-label">Amount Paid</div>
+        <div class="receipt-paid" id="receipt-paid-amount">₱0</div>
+      </div>
+      <div id="receipt-change-row"></div>
+      <hr class="receipt-divider">
+      <div class="receipt-thanks" id="receipt-thanks">Salamat! Thank you for your visit.</div>
+    </div>
+    <button class="btn-print" onclick="window.print()">🖨 Print Receipt</button>
+    <button class="btn-new-sale" onclick="newSale()">New Sale</button>
+  </div>
+</div>
+
+<!-- REPORTS -->
+<div class="screen" id="screen-reports">
+  <div class="topbar"><div><div class="topbar-title">Sales Reports</div><div class="topbar-sub" id="reports-period-label">Today</div></div></div>
+  <div class="reports-wrap">
+    <div class="reports-period">
+      <button class="period-btn active" onclick="setPeriod('today',this)">Today</button>
+      <button class="period-btn" onclick="setPeriod('week',this)">This Week</button>
+      <button class="period-btn" onclick="setPeriod('month',this)">This Month</button>
+      <button class="period-btn" onclick="setPeriod('all',this)">All Time</button>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value" id="rpt-revenue">₱0</div></div>
+      <div class="metric-card"><div class="metric-label">Transactions</div><div class="metric-value" id="rpt-txns">0</div></div>
+      <div class="metric-card"><div class="metric-label">Avg. Sale</div><div class="metric-value" id="rpt-avg">₱0</div></div>
+      <div class="metric-card"><div class="metric-label">Top Service</div><div class="metric-value" style="font-size:14px;" id="rpt-top">—</div><div class="metric-sub" id="rpt-top-sub"></div></div>
+    </div>
+    <div class="section-header">Transactions</div>
+    <div class="txn-list" id="txn-list"><div class="empty-txn">No transactions yet</div></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('screen-pos')"><div class="nav-icon">🧾</div><div class="nav-label">New Sale</div></button>
+    <button class="nav-btn active"><div class="nav-icon">📊</div><div class="nav-label">Reports</div></button>
+    <button class="nav-btn" onclick="showScreen('screen-settings')"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="screen" id="screen-settings">
+  <div class="topbar"><div><div class="topbar-title">Settings</div></div></div>
+  <div class="settings-wrap">
+    <div class="section-header">Clinic Info</div>
+    <div class="settings-section">
+      <div class="settings-row"><div><div class="settings-label">Clinic Name</div></div><input class="settings-input" id="set-clinic-name" value="Hilot Healing Hands" onchange="saveSettings()"></div>
+      <div class="settings-row"><div><div class="settings-label">Branch / Location</div></div><input class="settings-input" id="set-branch" placeholder="e.g. Makati" onchange="saveSettings()"></div>
+      <div class="settings-row"><div><div class="settings-label">Receipt Footer</div></div><input class="settings-input" id="set-thanks" value="Salamat! Come again." onchange="saveSettings()"></div>
+    </div>
+    <div class="section-header">Taxes</div>
+    <div class="settings-section">
+      <div class="settings-row"><div><div class="settings-label">Apply VAT (12%)</div></div><button class="toggle off" id="vat-toggle" onclick="toggleVat()"><div class="toggle-thumb"></div></button></div>
+      <div class="settings-row" id="vat-row" style="display:none"><div><div class="settings-label">VAT Rate (%)</div></div><input class="settings-input" type="number" id="set-vat-rate" value="12" style="width:70px" onchange="saveSettings()"></div>
+    </div>
+    <div class="section-header">Therapists</div>
+    <div class="settings-section" id="therapist-list-settings"></div>
+    <button onclick="addTherapist()" style="width:100%;padding:11px;border:1.5px dashed var(--teal);border-radius:var(--radius-sm);background:var(--teal-light);color:var(--teal-mid);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;">+ Add Therapist</button>
+    <div class="section-header">Services</div>
+    <div class="settings-section" id="services-settings-list"></div>
+    <button onclick="addService()" style="width:100%;padding:11px;border:1.5px dashed var(--teal);border-radius:var(--radius-sm);background:var(--teal-light);color:var(--teal-mid);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:16px;">+ Add Service</button>
+    <div class="section-header">Data</div>
+    <div class="settings-section">
+      <div class="settings-row"><div><div class="settings-label">Export Sales CSV</div></div><button onclick="exportCSV()" style="padding:8px 14px;border:1px solid var(--teal);border-radius:6px;background:white;color:var(--teal);font-size:13px;font-weight:600;cursor:pointer;">Export</button></div>
+      <div class="settings-row"><div><div class="settings-label" style="color:var(--coral);">Clear All Data</div><div class="settings-sub">Wipes all transactions</div></div><button onclick="clearAllData()" style="padding:8px 14px;border:1px solid var(--coral);border-radius:6px;background:white;color:var(--coral);font-size:13px;font-weight:600;cursor:pointer;">Clear</button></div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn" onclick="showScreen('screen-pos')"><div class="nav-icon">🧾</div><div class="nav-label">New Sale</div></button>
+    <button class="nav-btn" onclick="showScreen('screen-reports')"><div class="nav-icon">📊</div><div class="nav-label">Reports</div></button>
+    <button class="nav-btn active"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>
+  </div>
+</div>
+
+<script>
+// ---- DEFAULT SERVICES (real Hilot Healing Hands menu) ----
+const DEFAULT_SERVICES = [
+  // Signature Hilot — multi-price
+  {id:'s1',name:'Hilot w/ Banana Leaves',prices:[{label:'60 min',price:599},{label:'90 min',price:799},{label:'2 hrs',price:1099}],duration:'60–120 min',category:'Signature Hilot',icon:'🌿'},
+  {id:'s2',name:'Hilot Swedish Massage',prices:[{label:'60 min',price:599},{label:'90 min',price:799},{label:'2 hrs',price:1099}],duration:'60–120 min',category:'Signature Hilot',icon:'💆'},
+  {id:'s3',name:'Hilot Shiatsu (No Oil)',prices:[{label:'60 min',price:599},{label:'90 min',price:799},{label:'2 hrs',price:1099}],duration:'60–120 min',category:'Signature Hilot',icon:'👐'},
+  {id:'s4',name:'Hilot Combination',prices:[{label:'60 min',price:599},{label:'90 min',price:799},{label:'2 hrs',price:1099}],duration:'60–120 min',category:'Signature Hilot',icon:'✨'},
+  {id:'s5',name:'Hilot Reflexology',prices:[{label:'60 min',price:599},{label:'90 min',price:799},{label:'2 hrs',price:1099}],duration:'60–120 min',category:'Signature Hilot',icon:'🦶'},
+  {id:'s6',name:'Lymphatic Drainage',prices:[{label:'1.5 hrs',price:1499},{label:'2 hrs',price:2199},{label:'2.5 hrs',price:2549}],duration:'1.5–2.5 hrs',category:'Signature Hilot',icon:'💧'},
+  {id:'s7',name:"Kids Hilot (ages 2–10)",prices:[{label:'60 min',price:449}],duration:'60 min',category:'Signature Hilot',icon:'🧒'},
+  // Home Service
+  {id:'s8',name:'Home Service',prices:[{label:'1.5 hrs',price:849},{label:'2 hrs',price:1149},{label:'2.5 hrs',price:1419}],duration:'1.5–2.5 hrs',category:'Home Service',icon:'🏠'},
+  // Add-Ons
+  {id:'a1',name:'Ear Candling',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'🕯'},
+  {id:'a2',name:'Ventosa (Cupping)',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'🫙'},
+  {id:'a3',name:'Hot Stone w/ Oil',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'🪨'},
+  {id:'a4',name:'Yoni / Tuob Steaming',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'🌸'},
+  {id:'a5',name:'Abdominal Fertility',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'🌺'},
+  {id:'a6',name:'Head, Face & Neck',prices:[{label:'Add-on',price:300}],duration:'Add-on',category:'Add-Ons',icon:'😌'},
+  // Packages
+  {id:'p1',name:"Couple's Hilot",prices:[{label:'2 hrs',price:1198},{label:'3 hrs',price:1598},{label:'4 hrs',price:2198}],duration:'2–4 hrs',category:'Packages',icon:'💑'},
+  {id:'p2',name:'Foot Spa Reflexology',prices:[{label:'Session',price:750}],duration:'Session',category:'Packages',icon:'🛁'},
+  {id:'p3',name:'Special Package',prices:[{label:'Package',price:1250}],duration:'Hilot + Foot Spa + Reflexology',category:'Packages',icon:'🎁'},
+];
+const DEFAULT_THERAPISTS = ['Manghihilot 1','Manghihilot 2','Manghihilot 3'];
+const DEFAULT_SETTINGS = {clinicName:'Hilot Healing Hands',branch:'Makati',thanks:'Salamat! Thank you for your visit.',vatEnabled:false,vatRate:12};
+
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+let services=load('hhh_services',DEFAULT_SERVICES);
+let therapists=load('hhh_therapists',DEFAULT_THERAPISTS);
+let settings=load('hhh_settings',DEFAULT_SETTINGS);
+let transactions=load('hhh_transactions',[]);
+let cart=[];
+let discountMode=null;
+let selectedPayMethod='cash';
+let currentReportPeriod='today';
+
+function init(){
+  renderCategories();renderServices();renderTherapists();renderSettingsPage();updateCartDisplay();
+  document.getElementById('pos-date-display').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+function renderCategories(){
+  const cats=['All',...new Set(services.map(s=>s.category))];
+  document.getElementById('cat-tabs').innerHTML=cats.map((c,i)=>`<button class="cat-tab${i===0?' active':''}" onclick="filterCat('${c}',this)">${c}</button>`).join('');
+}
+let activeCategory='All';
+function filterCat(cat,btn){
+  activeCategory=cat;
+  document.querySelectorAll('.cat-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderServices();
+}
+
+function renderServices(){
+  const filtered=activeCategory==='All'?services:services.filter(s=>s.category===activeCategory);
+  document.getElementById('services-grid').innerHTML=filtered.map(s=>{
+    const multi=s.prices&&s.prices.length>1;
+    const singlePrice=s.prices&&s.prices.length===1?s.prices[0].price:null;
+    if(multi){
+      return `<div class="svc-card">
+        <div class="svc-card-icon">${s.icon||'💆'}</div>
+        <div class="svc-card-name">${s.name}</div>
+        <div class="svc-card-dur">${s.duration||''}</div>
+        <div class="svc-card-prices">${s.prices.map(p=>`<span class="price-pill" onclick="addToCartWithPrice('${s.id}','${p.label}',${p.price})">₱${p.price.toLocaleString()} <span style="opacity:0.7;font-weight:400;">${p.label}</span></span>`).join('')}</div>
+      </div>`;
+    } else {
+      return `<div class="svc-card" onclick="addToCartSingle('${s.id}')">
+        <div class="svc-card-icon">${s.icon||'💆'}</div>
+        <div class="svc-card-name">${s.name}</div>
+        <div class="svc-card-dur">${s.duration||''}</div>
+        <div class="svc-card-price">₱${(singlePrice||0).toLocaleString()}</div>
+      </div>`;
+    }
+  }).join('');
+}
+
+function addToCartSingle(svcId){
+  const svc=services.find(s=>s.id===svcId);
+  if(!svc||!svc.prices||!svc.prices[0])return;
+  addToCartWithPrice(svcId,svc.prices[0].label,svc.prices[0].price);
+}
+function addToCartWithPrice(svcId,label,price){
+  const svc=services.find(s=>s.id===svcId);
+  if(!svc)return;
+  const cartKey=svcId+'_'+label;
+  const existing=cart.find(i=>i.cartKey===cartKey);
+  if(existing){existing.qty++;}else{cart.push({cartKey,id:svcId,name:svc.name+(svc.prices.length>1?' ('+label+')':''),price,qty:1});}
+  updateCartDisplay();
+}
+function removeFromCart(cartKey){
+  const idx=cart.findIndex(i=>i.cartKey===cartKey);
+  if(idx===-1)return;
+  if(cart[idx].qty>1){cart[idx].qty--;}else{cart.splice(idx,1);}
+  updateCartDisplay();
+}
+function addQty(cartKey){
+  const item=cart.find(i=>i.cartKey===cartKey);
+  if(item)item.qty++;
+  updateCartDisplay();
+}
+function clearCart(){
+  cart=[];discountMode=null;
+  document.getElementById('disc-value-input').value='';
+  document.getElementById('disc-value-input').style.display='none';
+  document.getElementById('disc-pct-btn').classList.remove('active');
+  document.getElementById('disc-flat-btn').classList.remove('active');
+  updateCartDisplay();
+}
+function recalcCart(){updateCartDisplay();}
+function getDiscount(subtotal){
+  const val=parseFloat(document.getElementById('disc-value-input').value)||0;
+  if(!discountMode||val<=0)return 0;
+  if(discountMode==='pct')return Math.min(subtotal,subtotal*val/100);
+  if(discountMode==='flat')return Math.min(subtotal,val);
+  return 0;
+}
+function updateCartDisplay(){
+  const itemCount=cart.reduce((a,i)=>a+i.qty,0);
+  const subtotal=cart.reduce((a,i)=>a+i.price*i.qty,0);
+  const discount=getDiscount(subtotal);
+  const useVat=settings.vatEnabled;const vatRate=settings.vatRate||12;
+  const afterDisc=subtotal-discount;
+  const vat=useVat?afterDisc*vatRate/100:0;
+  const total=afterDisc+vat;
+  document.getElementById('cart-count-label').textContent=itemCount===0?'No items':`${itemCount} item${itemCount>1?'s':''}`;
+  const listEl=document.getElementById('cart-items-list');
+  const emptyEl=document.getElementById('cart-empty-msg');
+  if(cart.length===0){listEl.style.display='none';emptyEl.style.display='flex';}
+  else{
+    listEl.style.display='block';emptyEl.style.display='none';
+    listEl.innerHTML=cart.map(item=>`
+      <div class="cart-item">
+        <div class="cart-item-row">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">₱${(item.price*item.qty).toLocaleString()}</div>
+        </div>
+        <div class="cart-item-controls">
+          <button class="qty-btn" onclick="removeFromCart('${item.cartKey}')">−</button>
+          <span class="qty-val">${item.qty}</span>
+          <button class="qty-btn" onclick="addQty('${item.cartKey}')">+</button>
+          <span class="cart-item-sub">@ ₱${item.price.toLocaleString()}</span>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('cart-subtotal-row').style.display=(discount>0||useVat)?'flex':'none';
+  document.getElementById('cart-subtotal').textContent='₱'+subtotal.toLocaleString();
+  document.getElementById('cart-disc-row').style.display=discount>0?'flex':'none';
+  const discVal=parseFloat(document.getElementById('disc-value-input').value)||0;
+  document.getElementById('cart-disc-label').textContent=discountMode==='pct'?`Discount (${discVal}%)`:'Discount';
+  document.getElementById('cart-disc-amount').textContent='-₱'+discount.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  document.getElementById('cart-total').textContent='₱'+total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  const chargeBtn=document.getElementById('btn-charge');
+  chargeBtn.textContent=total>0?`Charge ₱${total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}`:'Charge ₱0';
+  chargeBtn.disabled=cart.length===0;
+}
+function toggleDiscount(mode){
+  const pctBtn=document.getElementById('disc-pct-btn');const flatBtn=document.getElementById('disc-flat-btn');const inp=document.getElementById('disc-value-input');
+  if(discountMode===mode){discountMode=null;pctBtn.classList.remove('active');flatBtn.classList.remove('active');inp.style.display='none';inp.value='';}
+  else{discountMode=mode;pctBtn.classList.toggle('active',mode==='pct');flatBtn.classList.toggle('active',mode==='flat');inp.style.display='block';inp.placeholder=mode==='pct'?'%':'₱';inp.focus();}
+  updateCartDisplay();
+}
+function goToPayment(){
+  if(cart.length===0)return;
+  const subtotal=cart.reduce((a,i)=>a+i.price*i.qty,0);
+  const discount=getDiscount(subtotal);
+  const useVat=settings.vatEnabled;const vatRate=settings.vatRate||12;
+  const afterDisc=subtotal-discount;const vat=useVat?afterDisc*vatRate/100:0;const total=afterDisc+vat;
+  document.getElementById('pay-total-display').innerHTML=`<span>₱</span>${total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}`;
+  let summHTML=cart.map(i=>`<div class="order-mini-item"><span>${i.qty}× ${i.name}</span><span>₱${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+  if(discount>0)summHTML+=`<div class="order-mini-item" style="color:var(--coral)"><span>Discount</span><span>-₱${discount.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  if(useVat)summHTML+=`<div class="order-mini-item"><span>VAT (${vatRate}%)</span><span>₱${vat.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  summHTML+=`<div class="order-mini-item total"><span>Total</span><span>₱${total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  document.getElementById('pay-order-summary').innerHTML=summHTML;
+  const qcWrap=document.getElementById('quick-cash-btns');
+  const amounts=[total,Math.ceil(total/100)*100,Math.ceil(total/500)*500,Math.ceil(total/1000)*1000].filter((v,i,a)=>a.indexOf(v)===i).slice(0,4);
+  qcWrap.innerHTML=amounts.map(a=>`<button onclick="setTendered(${a})" style="padding:6px 12px;border:1px solid var(--teal);border-radius:20px;background:var(--teal-light);color:var(--teal-mid);font-size:13px;font-weight:600;cursor:pointer;">₱${a.toLocaleString()}</button>`).join('');
+  document.getElementById('cash-tendered').value='';document.getElementById('change-row').style.display='none';
+  document.getElementById('ref-number').value='';
+  selectPayMethodByName('cash');
+  showScreen('screen-payment');
+}
+function setTendered(amt){document.getElementById('cash-tendered').value=amt;calcChange();}
+function calcChange(){
+  const totalText=document.getElementById('pay-total-display').textContent.replace(/[₱,]/g,'');
+  const total=parseFloat(totalText)||0;const tendered=parseFloat(document.getElementById('cash-tendered').value)||0;
+  const changeRow=document.getElementById('change-row');
+  if(tendered>=total){changeRow.style.display='flex';document.getElementById('change-display').textContent='₱'+(tendered-total).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});}
+  else{changeRow.style.display='none';}
+}
+function selectPayMethodByName(name){
+  document.querySelectorAll('.pay-method').forEach(e=>{if(e.dataset.method===name)e.classList.add('selected');else e.classList.remove('selected');});
+  selectedPayMethod=name;
+  document.getElementById('cash-section').style.display=name==='cash'?'block':'none';
+  document.getElementById('digital-section').style.display=name!=='cash'?'block':'none';
+}
+function selectPayMethod(el){
+  document.querySelectorAll('.pay-method').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');selectedPayMethod=el.dataset.method;
+  document.getElementById('cash-section').style.display=selectedPayMethod==='cash'?'block':'none';
+  document.getElementById('digital-section').style.display=selectedPayMethod!=='cash'?'block':'none';
+}
+function confirmPayment(){
+  const totalText=document.getElementById('pay-total-display').textContent.replace(/[₱,]/g,'');
+  const total=parseFloat(totalText)||0;
+  const tendered=selectedPayMethod==='cash'?(parseFloat(document.getElementById('cash-tendered').value)||0):total;
+  if(selectedPayMethod==='cash'&&tendered<total){alert('Cash tendered is less than the total.');return;}
+  const subtotal=cart.reduce((a,i)=>a+i.price*i.qty,0);
+  const discount=getDiscount(subtotal);const useVat=settings.vatEnabled;const vatRate=settings.vatRate||12;
+  const afterDisc=subtotal-discount;const vat=useVat?afterDisc*vatRate/100:0;
+  const therapist=document.getElementById('therapist-select').value;
+  const refNum=document.getElementById('ref-number').value;
+  const txn={
+    id:'TXN'+Date.now(),date:new Date().toISOString(),
+    items:JSON.parse(JSON.stringify(cart)),
+    subtotal,discount,vat,total,payMethod:selectedPayMethod,
+    tendered,change:selectedPayMethod==='cash'?tendered-total:0,
+    therapist,refNum,discMode:discountMode,
+    discValue:parseFloat(document.getElementById('disc-value-input').value)||0
+  };
+  transactions.push(txn);save('hhh_transactions',transactions);
+  showReceipt(txn);
+}
+function showReceipt(txn){
+  const s=settings;
+  document.getElementById('receipt-clinic-sub').textContent=s.branch?s.branch+' · The Ancient Art of Healing':'The Ancient Art of Healing';
+  document.getElementById('receipt-thanks').textContent=s.thanks||'Salamat! Thank you for your visit.';
+  const d=new Date(txn.date);
+  document.getElementById('receipt-meta').innerHTML=`
+    <div class="receipt-row meta"><span>Date</span><span>${d.toLocaleDateString('en-PH')}</span></div>
+    <div class="receipt-row meta"><span>Time</span><span>${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</span></div>
+    <div class="receipt-row meta"><span>Receipt #</span><span>${txn.id}</span></div>
+    ${txn.therapist?`<div class="receipt-row meta"><span>Therapist</span><span>${txn.therapist}</span></div>`:''}`;
+  document.getElementById('receipt-items').innerHTML=txn.items.map(i=>`<div class="receipt-row"><span>${i.qty}× ${i.name}</span><span>₱${(i.price*i.qty).toLocaleString()}</span></div>`).join('');
+  let totHTML=`<div class="receipt-row"><span>Subtotal</span><span>₱${txn.subtotal.toLocaleString()}</span></div>`;
+  if(txn.discount>0)totHTML+=`<div class="receipt-row" style="color:var(--coral)"><span>Discount${txn.discMode==='pct'?` (${txn.discValue}%)`:''}}</span><span>-₱${txn.discount.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  if(txn.vat>0)totHTML+=`<div class="receipt-row"><span>VAT (${settings.vatRate}%)</span><span>₱${txn.vat.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  totHTML+=`<div class="receipt-row bold"><span>Total</span><span>₱${txn.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`;
+  totHTML+=`<div class="receipt-row meta"><span>Payment</span><span>${{cash:'Cash 💵',card:'Card 💳',gcash:'GCash 📱',paymaya:'PayMaya 📲'}[txn.payMethod]||txn.payMethod}</span></div>`;
+  if(txn.refNum)totHTML+=`<div class="receipt-row meta"><span>Ref #</span><span>${txn.refNum}</span></div>`;
+  document.getElementById('receipt-totals').innerHTML=totHTML;
+  document.getElementById('receipt-paid-amount').textContent='₱'+txn.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});
+  document.getElementById('receipt-change-row').innerHTML=txn.change>0?`<div class="receipt-row" style="color:var(--teal-mid);font-weight:600"><span>Change</span><span>₱${txn.change.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}</span></div>`:'';
+  showScreen('screen-receipt');
+}
+function newSale(){clearCart();document.getElementById('therapist-select').value='';showScreen('screen-pos');}
+function setPeriod(p,btn){
+  currentReportPeriod=p;document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderReports();
+}
+function filterTxnsByPeriod(period){
+  const now=new Date();
+  return transactions.filter(t=>{
+    const d=new Date(t.date);
+    if(period==='today')return d.toDateString()===now.toDateString();
+    if(period==='week'){const w=new Date(now);w.setDate(now.getDate()-now.getDay());return d>=w;}
+    if(period==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+function renderReports(){
+  const txns=filterTxnsByPeriod(currentReportPeriod);
+  const revenue=txns.reduce((a,t)=>a+t.total,0);
+  const avg=txns.length?revenue/txns.length:0;
+  const svcCount={};txns.forEach(t=>t.items.forEach(i=>{svcCount[i.name]=(svcCount[i.name]||0)+i.qty;}));
+  const topEntry=Object.entries(svcCount).sort((a,b)=>b[1]-a[1])[0];
+  const labels={today:'Today',week:'This Week',month:'This Month',all:'All Time'};
+  document.getElementById('reports-period-label').textContent=labels[currentReportPeriod];
+  document.getElementById('rpt-revenue').textContent='₱'+revenue.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0});
+  document.getElementById('rpt-txns').textContent=txns.length;
+  document.getElementById('rpt-avg').textContent='₱'+Math.round(avg).toLocaleString();
+  document.getElementById('rpt-top').textContent=topEntry?topEntry[0]:'—';
+  document.getElementById('rpt-top-sub').textContent=topEntry?`${topEntry[1]}× sold`:'';
+  const listEl=document.getElementById('txn-list');
+  if(txns.length===0){listEl.innerHTML='<div class="empty-txn">No transactions in this period</div>';return;}
+  const sorted=[...txns].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  listEl.innerHTML=sorted.map(t=>{
+    const d=new Date(t.date);
+    const timeStr=d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+    const itemsStr=t.items.map(i=>`${i.qty}× ${i.name}`).join(', ');
+    const pm={cash:'Cash 💵',card:'Card 💳',gcash:'GCash 📱',paymaya:'PayMaya 📲'}[t.payMethod]||t.payMethod;
+    return `<div class="txn-item"><div class="txn-info"><div class="txn-time">${timeStr} · ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</div><div class="txn-items">${itemsStr}</div><div class="txn-pay">${pm}${t.therapist?' · '+t.therapist:''}</div></div><div class="txn-total">₱${t.total.toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0})}</div></div>`;
+  }).join('');
+}
+function renderSettingsPage(){
+  document.getElementById('set-clinic-name').value=settings.clinicName||'Hilot Healing Hands';
+  document.getElementById('set-branch').value=settings.branch||'';
+  document.getElementById('set-thanks').value=settings.thanks||'Salamat! Come again.';
+  document.getElementById('set-vat-rate').value=settings.vatRate||12;
+  document.getElementById('vat-toggle').className='toggle '+(settings.vatEnabled?'on':'off');
+  document.getElementById('vat-row').style.display=settings.vatEnabled?'flex':'none';
+  renderTherapistSettings();renderServicesSettings();
+}
+function saveSettings(){
+  settings.clinicName=document.getElementById('set-clinic-name').value;
+  settings.branch=document.getElementById('set-branch').value;
+  settings.thanks=document.getElementById('set-thanks').value;
+  settings.vatRate=parseFloat(document.getElementById('set-vat-rate').value)||12;
+  save('hhh_settings',settings);
+}
+function toggleVat(){settings.vatEnabled=!settings.vatEnabled;save('hhh_settings',settings);renderSettingsPage();updateCartDisplay();}
+function renderTherapists(){
+  const sel=document.getElementById('therapist-select');
+  sel.innerHTML='<option value="">— Therapist (optional) —</option>'+therapists.map(t=>`<option value="${t}">${t}</option>`).join('');
+}
+function renderTherapistSettings(){
+  const el=document.getElementById('therapist-list-settings');
+  if(therapists.length===0){el.innerHTML='<div style="padding:14px 16px;color:var(--text3);font-size:13px;">No therapists added.</div>';return;}
+  el.innerHTML=therapists.map((t,i)=>`<div class="settings-row"><input class="settings-input" style="flex:1;text-align:left;" value="${t}" onchange="updateTherapist(${i},this.value)"><button onclick="removeTherapist(${i})" style="background:none;border:none;color:var(--coral);font-size:18px;cursor:pointer;padding:0 0 0 10px;">✕</button></div>`).join('');
+}
+function addTherapist(){const name=prompt('Therapist name:');if(name&&name.trim()){therapists.push(name.trim());save('hhh_therapists',therapists);renderTherapists();renderTherapistSettings();}}
+function updateTherapist(i,v){therapists[i]=v;save('hhh_therapists',therapists);renderTherapists();}
+function removeTherapist(i){therapists.splice(i,1);save('hhh_therapists',therapists);renderTherapists();renderTherapistSettings();}
+function renderServicesSettings(){
+  const el=document.getElementById('services-settings-list');
+  el.innerHTML=services.map((s,i)=>`
+    <div class="settings-row" style="flex-wrap:wrap;gap:6px;">
+      <div style="flex:1;min-width:130px;">
+        <div style="font-size:13px;font-weight:500;margin-bottom:4px;">${s.icon||'💆'} ${s.name}</div>
+        <div style="font-size:11px;color:var(--text3);">${s.prices.map(p=>p.label+': ₱'+p.price).join(' · ')}</div>
+      </div>
+      <button onclick="removeService(${i})" style="background:none;border:none;color:var(--coral);font-size:18px;cursor:pointer;align-self:center;">✕</button>
+    </div>`).join('');
+}
+function removeService(i){if(!confirm('Remove "'+services[i].name+'"?'))return;services.splice(i,1);save('hhh_services',services);renderCategories();renderServices();renderServicesSettings();}
+function addService(){
+  const name=prompt('Service name:');if(!name||!name.trim())return;
+  const price=parseFloat(prompt('Price (₱):'))||0;
+  const duration=prompt('Duration (e.g. 60 min):')||'';
+  const category=prompt('Category:')||'Other';
+  services.push({id:'svc'+Date.now(),name:name.trim(),prices:[{label:duration||'Session',price}],duration,category,icon:'💆'});
+  save('hhh_services',services);renderCategories();renderServices();renderServicesSettings();
+}
+function exportCSV(){
+  if(transactions.length===0){alert('No transactions to export.');return;}
+  const rows=[['Receipt #','Date','Time','Items','Subtotal','Discount','VAT','Total','Payment','Therapist','Ref #']];
+  transactions.forEach(t=>{const d=new Date(t.date);rows.push([t.id,d.toLocaleDateString('en-PH'),d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),t.items.map(i=>`${i.qty}x ${i.name}`).join('; '),t.subtotal,t.discount,t.vat||0,t.total,t.payMethod,t.therapist||'',t.refNum||'']);});
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=`hilot_sales_${new Date().toISOString().split('T')[0]}.csv`;a.click();
+}
+function clearAllData(){if(!confirm('Delete ALL transaction data?'))return;transactions=[];save('hhh_transactions',[]);renderReports();alert('All data cleared.');}
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='screen-reports')renderReports();
+}
+init();
+</script>
+</body>
+</html>
