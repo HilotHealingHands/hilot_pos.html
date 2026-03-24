@@ -1238,8 +1238,20 @@ async function confirmCheckout(){
   const disc=Math.round(sub*coDiscPct/100);const after=sub-disc;
   const vat=settings.vatEnabled?Math.round(after*(settings.vatRate||12)/100):0;
   const commission=getCoCommission(s);
-  if(coPayMethod==='cash'){const recv=parseFloat(document.getElementById('co-cash-tendered').value)||0;if(recv<total){alert('Cash tendered is less than total.');return;}}
-  if(coPayMethod==='giftcert'){const code=document.getElementById('co-gc-code').value.trim().toUpperCase();const gc=giftCerts.find(g=>g.code===code&&g.status==='active');if(!gc){alert('Invalid or used gift certificate.');return;}if(gc.amount<total){alert(`Gift cert ₱${gc.amount.toLocaleString()} is less than total.`);return;}gc.status='used';gc.usedDate=new Date().toISOString();sv('hhh_giftcerts',giftCerts);}
+  // Validate cash amount
+  let recv=total;
+  if(coPayMethod==='cash'){
+    recv=parseFloat(document.getElementById('co-cash-tendered').value)||0;
+    if(recv<total){alert('Cash tendered is less than total.');return;}
+  }
+  // Validate gift cert
+  if(coPayMethod==='giftcert'){
+    const code=document.getElementById('co-gc-code').value.trim().toUpperCase();
+    const gc=giftCerts.find(g=>g.code===code&&g.status==='active');
+    if(!gc){alert('Invalid or used gift certificate.');return;}
+    if(gc.amount<total){alert(`Gift cert ₱${gc.amount.toLocaleString()} is less than total.`);return;}
+    gc.status='used';gc.usedDate=new Date().toISOString();sv('hhh_giftcerts',giftCerts);
+  }
   const adjNote=document.getElementById('co-adj-note').value.trim()||'Manager adjustment';
   const adj=coAdjDir*coAdjAmount;
   // Record visit
@@ -1259,12 +1271,15 @@ async function confirmCheckout(){
     isBirthday:coPayMethod==='birthday',isLoyalty:coPayMethod==='loyalty',
     sessionStartTime:s.startTime,durationMins:s.duration,extensions:s.extensions||[]};
   transactions.push(txn);sv('hhh_transactions',transactions);
-  // Remove session
+  // Remove session and close modal immediately
   activeSessions=activeSessions.filter(x=>x.id!==s.id);sv('hhh_sessions',activeSessions);
   closeCheckout();renderSessions();
   showReceipt(txn);
-  const synced=await syncToSheets(txn);
-  document.getElementById('r-sync-badge').innerHTML=settings.scriptUrl?(synced?'<span style="color:var(--tm)">☁ Synced ✓</span>':'<span style="color:var(--coral)">⚠ Sync failed — saved locally</span>'):'';
+  // Sync in background — never blocks receipt
+  syncToSheets(txn).then(synced=>{
+    const badge=document.getElementById('r-sync-badge');
+    if(badge)badge.innerHTML=settings.scriptUrl?(synced?'<span style="color:var(--tm)">☁ Synced ✓</span>':'<span style="color:var(--coral)">⚠ Sync failed — saved locally</span>'):'';
+  });
 }
 
 // ================================================================
