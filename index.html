@@ -756,7 +756,6 @@ const SERVICES=[
   {id:'s5',name:'Reflexology Foot and Hands',cat:'Body Treatments',icon:'🦶',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
   {id:'s6',name:'Lymphatic Hilot Massage',cat:'Body Treatments',icon:'💧',prices:[{label:'90 min',price:1499,dur:90},{label:'120 min',price:2199,dur:120}]},
   {id:'s7',name:'Home Service',cat:'Home Service',icon:'🏠',prices:[{label:'90 min',price:849,dur:90},{label:'120 min',price:1149,dur:120}]},
-  {id:'s7b',name:'Portable Massage Bed',cat:'Home Service',icon:'🛏',prices:[{label:'Add-on',price:300,dur:0}]},
   // Add-Ons ₱300
   {id:'a1',name:'Ventosa or Cupping',cat:'Add-Ons',icon:'🫙',prices:[{label:'Add-on',price:300,dur:30}]},
   {id:'a2',name:'Hot Stone with Aroma Oil',cat:'Add-Ons',icon:'🪨',prices:[{label:'Add-on',price:300,dur:30}]},
@@ -771,6 +770,7 @@ const SERVICES=[
   {id:'a10',name:'Body Organic Herbal Scrub',cat:'Add-Ons',icon:'🌿',prices:[{label:'Session',price:499,dur:45}]},
   {id:'a11',name:'Kiddie Hilot Massage',cat:'Add-Ons',icon:'🧒',prices:[{label:'Session',price:449,dur:45}]},
   {id:'a12',name:'Head, Scalp and Face Organic Spa',cat:'Add-Ons',icon:'💆',prices:[{label:'Session',price:1299,dur:60}]},
+  {id:'a13',name:'Portable Massage Bed',cat:'Add-Ons',icon:'🛏',prices:[{label:'Add-on',price:300,dur:0}]},
   // Packages
   {id:'p1',name:'Special Package A — 90min Hilot + Head/Scalp/Face Organic Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1849,dur:120}]},
   {id:'p2',name:'Special Package B — 90min Hilot + 30min Aroma Foot Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1349,dur:120}]},
@@ -801,7 +801,7 @@ let payWeekOffset=0;
 // Checkout state
 let checkoutSessionId=null,coDiscPct=0,coDiscMode=null,coPayMethod='cash',coAdjDir=-1,coAdjAmount=0;
 // Check-in state
-let ciSelectedService=null,ciSelectedClient=null,ciCategory='Body Treatments';
+let ciSelectedServices=[],ciSelectedClient=null,ciCategory='Body Treatments';
 // Timer
 let timerInterval=null;
 
@@ -912,7 +912,7 @@ function renderSessions(){
           <div class="sc-name">${s.clientName}</div>
           ${s.clientPhone?`<div class="sc-phone">📞 ${s.clientPhone}</div>`:''}
           <div class="sc-badges">
-            <span class="sc-badge svc">${s.serviceName}${s.priceLabel?' · '+s.priceLabel:''}</span>
+            <span class="sc-badge svc">${s.serviceDisplay||s.serviceName}${s.priceLabel&&!s.serviceDisplay?' · '+s.priceLabel:''}</span>
             ${s.therapist?`<span class="sc-badge therapist">👤 ${s.therapist}</span>`:''}
             ${s.isHome?`<span class="sc-badge home">🏠 Home</span>`:''}
             ${client&&stamps>0?`<span class="sc-badge loyalty">⭐ ${stamps}/9</span>`:''}
@@ -975,7 +975,7 @@ function renderCIPanel(){
   document.getElementById('ci-therapist').innerHTML='<option value="">— Any therapist —</option>'+therapists.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 function setCICat(cat){
-  ciCategory=cat;ciSelectedService=null;
+  ciCategory=cat;ciSelectedServices=[];
   document.getElementById('ci-sel-display').style.display='none';
   document.getElementById('ci-sel-display').textContent='';
   document.querySelectorAll('.ci-cat').forEach(c=>c.classList.toggle('active',c.textContent===cat));
@@ -985,24 +985,44 @@ function renderCIServices(){
   const svcs=SERVICES.filter(s=>s.cat===ciCategory);
   const el=document.getElementById('ci-svc-list');
   el.innerHTML=svcs.map(s=>s.prices.map(p=>`
-    <div class="ci-svc-item${ciSelectedService&&ciSelectedService.sid===s.id&&ciSelectedService.label===p.label?' sel':''}"
-      onclick="selectCISvc('${s.id}','${p.label}',${p.price},${p.dur},'${escQ(s.name)}')">
+    <div class="ci-svc-item${ciSelectedServices.some(x=>x.sid===s.id&&x.label===p.label)?' sel':''}"
+      onclick="toggleCISvc('${s.id}','${p.label}',${p.price},${p.dur},'${escQ(s.name)}')">
       <span class="ci-svc-name">${s.name}${s.prices.length>1?' — '+p.label:''}</span>
       <span class="ci-svc-price">₱${p.price.toLocaleString()}</span>
-      <div class="ci-svc-dur">${p.dur} min</div>
+      <div class="ci-svc-dur">${p.dur>0?p.dur+' min':'Add-on'}</div>
     </div>`).join('')).join('');
   // Show/hide transport row
   document.getElementById('ci-transport-row').style.display=ciCategory==='Home Service'?'flex':'none';
 }
 function escQ(s){return s.replace(/'/g,"\\'");}
-function selectCISvc(sid,label,price,dur,name){
-  ciSelectedService={sid,label,price,dur,name};
-  document.querySelectorAll('.ci-svc-item').forEach(el=>el.classList.remove('sel'));
-  event.currentTarget.classList.add('sel');
-  const disp=document.getElementById('ci-sel-display');
-  disp.style.display='block';
-  disp.textContent=`✓ ${name}${label&&label!=='Add-on'&&label!=='Session'?' — '+label:''} · ₱${price.toLocaleString()} · ${dur} min`;
+function toggleCISvc(sid,label,price,dur,name){
+  const idx=ciSelectedServices.findIndex(x=>x.sid===sid&&x.label===label);
+  if(idx>-1){
+    ciSelectedServices.splice(idx,1);
+  } else {
+    // If this is a primary service (not Add-On), replace any existing primary service
+    const svc=SERVICES.find(s=>s.id===sid);
+    const isAddon=svc&&svc.cat==='Add-Ons';
+    if(!isAddon){
+      // Remove any previously selected primary service (non-add-on)
+      ciSelectedServices=ciSelectedServices.filter(x=>{
+        const s=SERVICES.find(sv=>sv.id===x.sid);
+        return s&&s.cat==='Add-Ons';
+      });
+    }
+    ciSelectedServices.push({sid,label,price,dur,name,isAddon:!!isAddon});
+  }
+  renderCIServices();
+  updateCISelDisplay();
   checkCIReady();
+}
+function updateCISelDisplay(){
+  const disp=document.getElementById('ci-sel-display');
+  if(!ciSelectedServices.length){disp.style.display='none';disp.textContent='';return;}
+  const total=ciSelectedServices.reduce((a,x)=>a+x.price,0);
+  const dur=ciSelectedServices.reduce((a,x)=>a+x.dur,0);
+  disp.style.display='block';
+  disp.innerHTML='✓ '+ciSelectedServices.map(x=>x.name+(x.label&&x.label!=='Add-on'&&x.label!=='Session'?' ('+x.label+')':'')).join(' + ')+` · ₱${total.toLocaleString()}${dur>0?' · '+dur+' min':''}`;
 }
 function ciLookup(){
   const q=document.getElementById('ci-phone').value.trim().toLowerCase();
@@ -1027,25 +1047,37 @@ function ciLookup(){
 }
 function checkCIReady(){
   const name=document.getElementById('ci-walkname').value.trim();
+  const primarySvc=ciSelectedServices.find(x=>!x.isAddon);
   const btn=document.getElementById('btn-start-session');
-  btn.disabled=!(ciSelectedService&&name);
-  btn.textContent=ciSelectedService&&name?`Start — ${ciSelectedService.name.substring(0,20)} · ₱${ciSelectedService.price.toLocaleString()}`:'Select service & enter name';
+  btn.disabled=!(primarySvc&&name);
+  if(primarySvc&&name){
+    const total=ciSelectedServices.reduce((a,x)=>a+x.price,0);
+    btn.textContent=`Start Session · ₱${total.toLocaleString()}`;
+  } else {
+    btn.textContent='Select a service & enter client name';
+  }
 }
 function startSession(){
-  if(!ciSelectedService)return;
+  const primarySvc=ciSelectedServices.find(x=>!x.isAddon);
+  if(!primarySvc){alert('Please select a main service.');return;}
   const name=document.getElementById('ci-walkname').value.trim();
   if(!name){alert('Enter client name.');return;}
   const phone=document.getElementById('ci-phone').value.trim();
   const therapist=document.getElementById('ci-therapist').value;
   const transport=parseFloat(document.getElementById('ci-transport').value)||0;
+  const totalPrice=ciSelectedServices.reduce((a,x)=>a+x.price,0);
+  const totalDur=ciSelectedServices.reduce((a,x)=>a+x.dur,0)||primarySvc.dur;
+  const addons=ciSelectedServices.filter(x=>x.isAddon);
+  const serviceDisplay=ciSelectedServices.map(x=>x.name+(x.label&&x.label!=='Add-on'&&x.label!=='Session'?' ('+x.label+')':'')).join(' + ');
   const session={
     id:'SES'+Date.now(),
     branch:currentBranch.id,branchName:currentBranch.name,
     clientName:name,clientPhone:phone,
-    serviceId:ciSelectedService.sid,serviceName:ciSelectedService.name,
-    priceLabel:ciSelectedService.label,price:ciSelectedService.price,
-    duration:ciSelectedService.dur,therapist,transport,
-    isHome:ciCategory==='Home Service',
+    serviceId:primarySvc.sid,serviceName:primarySvc.name,
+    priceLabel:primarySvc.label,price:totalPrice,
+    addons:addons,serviceDisplay,
+    duration:totalDur,therapist,transport,
+    isHome:ciCategory==='Home Service'||primarySvc.sid==='s7',
     startTime:Date.now(),extensions:[],
     date:new Date().toISOString()
   };
@@ -1057,7 +1089,7 @@ function startSession(){
   document.getElementById('ci-client-result').innerHTML='';
   document.getElementById('ci-sel-display').style.display='none';
   document.getElementById('ci-sel-display').textContent='';
-  ciSelectedService=null;ciSelectedClient=null;
+  ciSelectedServices=[];ciSelectedClient=null;
   document.querySelectorAll('.ci-svc-item').forEach(el=>el.classList.remove('sel'));
   checkCIReady();
   renderSessions();
@@ -1114,7 +1146,8 @@ function renderCoLines(s){
   const transport=s.transport||0;
   const adj=coAdjDir*(coAdjAmount||0);
   const total=Math.max(0,after+vat+transport+adj);
-  let html=`<div class="co-line"><span>${s.serviceName}${s.priceLabel?' ('+s.priceLabel+')':''}</span><span>₱${s.price.toLocaleString()}</span></div>`;
+  let html=`<div class="co-line"><span>${s.serviceName}${s.priceLabel?' ('+s.priceLabel+')':''}</span><span>₱${(s.price-(s.addons||[]).reduce((a,x)=>a+x.price,0)).toLocaleString()}</span></div>`;
+  (s.addons||[]).forEach(a=>html+=`<div class="co-line"><span>+ ${a.name}</span><span>₱${a.price.toLocaleString()}</span></div>`);
   (s.extensions||[]).forEach((e,i)=>html+=`<div class="co-line"><span>Extension +30 min ${i+1}</span><span>₱${e.price.toLocaleString()}</span></div>`);
   if(transport>0)html+=`<div class="co-line" style="color:var(--amber)"><span>🏠 Transport Fee</span><span>₱${transport.toLocaleString()}</span></div>`;
   if(coDiscPct>0)html+=`<div class="co-line" style="color:var(--coral)"><span>Discount (${coDiscPct}%)</span><span>-₱${disc.toLocaleString()}</span></div>`;
@@ -1168,7 +1201,11 @@ async function confirmCheckout(){
   if(s.clientPhone&&clients[s.clientPhone]){clients[s.clientPhone].visits=(clients[s.clientPhone].visits||0)+1;sv('hhh_clients',clients);}
   const txn={id:'TXN'+Date.now(),date:new Date().toISOString(),sessionId:s.id,branch:s.branch,branchName:s.branchName,
     clientName:s.clientName,clientPhone:s.clientPhone,therapist:s.therapist,
-    items:[{name:s.serviceName+(s.priceLabel?' ('+s.priceLabel+')':''),price:s.price,qty:1},...(s.extensions||[]).map((e,i)=>({name:`Extension +30 min ${i+1}`,price:e.price,qty:1}))],
+    items:[
+      {name:s.serviceName+(s.priceLabel?' ('+s.priceLabel+')':''),price:s.price-(s.addons||[]).reduce((a,x)=>a+x.price,0),qty:1},
+      ...(s.addons||[]).map(a=>({name:a.name,price:a.price,qty:1})),
+      ...(s.extensions||[]).map((e,i)=>({name:`Extension +30 min ${i+1}`,price:e.price,qty:1}))
+    ],
     subtotal:sub,transport:s.transport||0,discount:disc,discountPct:coDiscPct,vat,
     managerAdj:adj||0,managerAdjNote:adjNote||'',
     total,commission,
