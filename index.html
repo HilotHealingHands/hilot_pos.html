@@ -979,11 +979,12 @@ function renderCIPanel(){
   document.getElementById('ci-therapist').innerHTML='<option value="">— Any therapist —</option>'+therapists.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 function setCICat(cat){
-  ciCategory=cat;ciSelectedServices=[];
-  document.getElementById('ci-sel-display').style.display='none';
-  document.getElementById('ci-sel-display').textContent='';
+  ciCategory=cat;
+  // Do NOT clear ciSelectedServices — preserve selections across tab switches
   document.querySelectorAll('.ci-cat').forEach(c=>c.classList.toggle('active',c.textContent===cat));
-  renderCIServices();checkCIReady();
+  renderCIServices();
+  updateCISelDisplay();
+  checkCIReady();
 }
 function renderCIServices(){
   const svcs=SERVICES.filter(s=>s.cat===ciCategory);
@@ -995,8 +996,9 @@ function renderCIServices(){
       <span class="ci-svc-price">₱${p.price.toLocaleString()}</span>
       <div class="ci-svc-dur">${p.dur>0?p.dur+' min':'Add-on'}</div>
     </div>`).join('')).join('');
-  // Show/hide transport row
-  document.getElementById('ci-transport-row').style.display=ciCategory==='Home Service'?'flex':'none';
+  // Show transport row if Home Service is selected (regardless of current tab)
+  const hasHomeService=ciSelectedServices.some(x=>x.sid==='s7');
+  document.getElementById('ci-transport-row').style.display=(ciCategory==='Home Service'||hasHomeService)?'flex':'none';
 }
 function escQ(s){return s.replace(/'/g,"\\'");}
 function toggleCISvc(sid,label,price,dur,name){
@@ -1086,15 +1088,17 @@ function startSession(){
     date:new Date().toISOString()
   };
   activeSessions.push(session);sv('hhh_sessions',activeSessions);
-  // Reset check-in panel
+  // Reset check-in panel fully
   document.getElementById('ci-phone').value='';
   document.getElementById('ci-walkname').value='';
   document.getElementById('ci-transport').value='';
   document.getElementById('ci-client-result').innerHTML='';
   document.getElementById('ci-sel-display').style.display='none';
   document.getElementById('ci-sel-display').textContent='';
-  ciSelectedServices=[];ciSelectedClient=null;
+  ciSelectedServices=[];ciSelectedClient=null;ciCategory='Body Treatments';
   document.querySelectorAll('.ci-svc-item').forEach(el=>el.classList.remove('sel'));
+  document.querySelectorAll('.ci-cat').forEach((c,i)=>c.classList.toggle('active',i===0));
+  renderCIServices();
   checkCIReady();
   renderSessions();
 }
