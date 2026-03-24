@@ -786,6 +786,13 @@ const SERVICES=[
 // ================================================================
 function ld(k,d){try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch(e){return d;}}
 function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function getTherapists(bid){
+  // Returns therapist list for branch — always falls back to defaults if empty
+  const stored=ld('hhh_therapists_'+bid,null);
+  const list=(stored&&stored.length>0)?stored:(DEFAULT_THERAPISTS[bid]||[]);
+  if((!stored||stored.length===0)&&list.length>0) sv('hhh_therapists_'+bid,list);
+  return list;
+}
 
 // ================================================================
 // STATE
@@ -938,18 +945,17 @@ function renderSessions(){
   }).join('');
 }
 function getExtPrice(s, mins){
-  // Always base extension on the PRIMARY service price only — never includes add-ons
-  const basePrice = s.primaryPrice || s.price - (s.addons||[]).reduce((a,x)=>a+x.price, 0);
-  if(s.isHome){
-    // Home service: half of the primary price per 30 min
-    return Math.round(basePrice / (s.duration / 30) / 2) || Math.round(basePrice / 2);
-  } else {
-    // Body treatment: use 60-min rate as base, half = 30 min price
-    const baseSvc = SERVICES.find(sv=>sv.id===s.serviceId);
-    const p60 = baseSvc ? baseSvc.prices.find(p=>p.dur===60||p.label.includes('60')) : null;
-    const rate30 = p60 ? Math.round(p60.price / 2) : Math.round(basePrice / 2);
-    return mins === 60 ? rate30 * 2 : rate30;
+  // Base price = primary service only, never includes add-ons
+  // Try primaryPrice first (set on new sessions), then subtract addons, then use s.price
+  let basePrice = s.primaryPrice;
+  if(!basePrice){
+    const addonTotal = (s.addons||[]).reduce((a,x)=>a+x.price, 0);
+    basePrice = s.price - addonTotal;
   }
+  if(!basePrice || basePrice <= 0) basePrice = s.price;
+  // +30 min = half of base price, +60 min = full base price
+  if(mins === 60) return Math.round(basePrice);
+  return Math.round(basePrice / 2);
 }
 function extendSession(id, mins){
   mins = mins || 30;
@@ -971,16 +977,14 @@ function cancelSession(id){
 // CHECK-IN PANEL
 // ================================================================
 function renderCIPanel(){
-  // Categories — always rebuild from SERVICES constant
   const cats=[...new Set(SERVICES.filter(s=>s.cat!=='Extension').map(s=>s.cat))];
   document.getElementById('ci-cats').innerHTML=cats.map(c=>`<span class="ci-cat${c===ciCategory?' active':''}" onclick="setCICat('${c}')">${c}</span>`).join('');
   renderCIServices();
-  // Therapists — load from localStorage with correct branch fallback
   const bid=currentBranch?currentBranch.id:'makati';
   const stored=ld('hhh_therapists_'+bid,null);
-  const therapists=stored!==null?stored:(DEFAULT_THERAPISTS[bid]||[]);
-  // Save defaults if nothing stored yet
-  if(stored===null&&therapists.length>0)sv('hhh_therapists_'+bid,therapists);
+  // Use stored if it exists AND has entries, otherwise use defaults
+  const therapists=(stored&&stored.length>0)?stored:(DEFAULT_THERAPISTS[bid]||[]);
+  if((!stored||stored.length===0)&&therapists.length>0) sv('hhh_therapists_'+bid,therapists);
   document.getElementById('ci-therapist').innerHTML='<option value="">— Any therapist —</option>'+therapists.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 function setCICat(cat){
@@ -1313,7 +1317,7 @@ function renderPayslips(){
   const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
   const weekTxns=transactions.filter(t=>{if(bid&&t.branch!==bid)return false;const d=new Date(t.date);return d>=start&&d<=end;});
   const bid2=currentBranch?currentBranch.id:'makati';
-  const therapists=ld('hhh_therapists_'+bid2,DEFAULT_THERAPISTS[bid2]||[]);
+  const therapists=getTherapists(bid2);
   const el=document.getElementById('payslip-list');
   if(!therapists.length){el.innerHTML='<div class="em">No therapists set up. Add therapists in Settings.</div>';return;}
   const commRate=settings.commissionRate||20;
@@ -1379,7 +1383,7 @@ function saveClockLogs(l){sv('hhh_clocklogs_'+(currentBranch?currentBranch.id:'m
 function fmt12Time(iso){if(!iso)return'';const d=new Date(iso);const h=d.getHours();const m=d.getMinutes();return`${h>12?h-12:h||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;}
 function renderSchedule(){
   const bid=currentBranch?currentBranch.id:'makati';
-  const therapists=ld('hhh_therapists_'+bid,DEFAULT_THERAPISTS[bid]||[]);
+  const therapists=getTherapists(bid);
   const schedules=getSchedules();const logs=getClockLogs();
   const today=new Date().toISOString().split('T')[0];
   const todayLogs=logs.filter(l=>l.date===today);
@@ -1505,7 +1509,7 @@ function openApptModal(id){
   const ssel=document.getElementById('appt-service');
   ssel.innerHTML='<option value="">— Select service —</option>'+SERVICES.filter(s=>s.cat!=='Extension').map(s=>`<option value="${s.id}" ${a&&a.serviceId===s.id?'selected':''}>${s.name}</option>`).join('');
   const bid=currentBranch?currentBranch.id:'makati';
-  const therapists=ld('hhh_therapists_'+bid,[]);
+  const therapists=getTherapists(bid);
   const tsel=document.getElementById('appt-therapist');
   tsel.innerHTML='<option value="">— Any available —</option>'+therapists.map(t=>`<option value="${t}" ${a&&a.therapist===t?'selected':''}>${t}</option>`).join('');
   document.getElementById('appt-modal').style.display='flex';
@@ -1622,7 +1626,7 @@ function renderOwnerDashboard(){
   const today=new Date().toISOString().split('T')[0];
   document.getElementById('owner-attendance').innerHTML=bids.map(bid=>{
     const b=BRANCHES[bid];const logs=ld('hhh_clocklogs_'+bid,[]).filter(l=>l.date===today);
-    const therapists=ld('hhh_therapists_'+bid,DEFAULT_THERAPISTS[bid]||[]);
+    const therapists=getTherapists(bid);
     const rows=therapists.map(name=>{const log=logs.find(l=>l.name===name);const status=log&&log.clockIn&&!log.clockOut?(log.late?'🔴':'🟢'):log&&log.clockOut?'⬜':'○';return`<div class="att-row"><span class="att-name">${status} ${name}</span><span class="att-time">${log&&log.clockIn?fmt12Time(log.clockIn):''}</span></div>`;}).join('')||'<div style="font-size:10px;color:var(--t3);">No therapists</div>';
     return`<div class="att-card"><div class="att-branch-lbl">${b.icon} ${b.name}</div>${rows}</div>`;
   }).join('');
@@ -1694,15 +1698,15 @@ async function submitEOD(){
 function renderTherapistSettings(){
   const bid=currentBranch?currentBranch.id:'makati';
   const stored=ld('hhh_therapists_'+bid,null);
-  const t=stored!==null?stored:(DEFAULT_THERAPISTS[bid]||[]);
-  if(stored===null&&t.length>0)sv('hhh_therapists_'+bid,t);
+  const t=(stored&&stored.length>0)?stored:(DEFAULT_THERAPISTS[bid]||[]);
+  if((!stored||stored.length===0)&&t.length>0) sv('hhh_therapists_'+bid,t);
   const el=document.getElementById('therapist-settings-list');
   if(!t.length){el.innerHTML='<div style="padding:10px 12px;color:var(--t3);font-size:11px;">No therapists yet.</div>';return;}
   el.innerHTML=t.map((x,i)=>`<div class="settings-row"><input class="sinp" style="flex:1;text-align:left;" value="${x}" onchange="updateTherapist(${i},this.value)"><button onclick="removeTherapist(${i})" style="background:none;border:none;color:var(--coral);font-size:14px;cursor:pointer;padding:0 0 0 7px;">✕</button></div>`).join('');
 }
-function addTherapist(){const n=prompt('Therapist name:');if(!n||!n.trim())return;const bid=currentBranch?currentBranch.id:'makati';const t=ld('hhh_therapists_'+bid,[]);t.push(n.trim());sv('hhh_therapists_'+bid,t);renderTherapistSettings();renderCIPanel();}
-function updateTherapist(i,v){const bid=currentBranch?currentBranch.id:'makati';const t=ld('hhh_therapists_'+bid,[]);t[i]=v;sv('hhh_therapists_'+bid,t);renderCIPanel();}
-function removeTherapist(i){const bid=currentBranch?currentBranch.id:'makati';const t=ld('hhh_therapists_'+bid,[]);t.splice(i,1);sv('hhh_therapists_'+bid,t);renderTherapistSettings();renderCIPanel();}
+function addTherapist(){const n=prompt('Therapist name:');if(!n||!n.trim())return;const bid=currentBranch?currentBranch.id:'makati';const t=getTherapists(bid);t.push(n.trim());sv('hhh_therapists_'+bid,t);renderTherapistSettings();renderCIPanel();}
+function updateTherapist(i,v){const bid=currentBranch?currentBranch.id:'makati';const t=getTherapists(bid);t[i]=v;sv('hhh_therapists_'+bid,t);renderCIPanel();}
+function removeTherapist(i){const bid=currentBranch?currentBranch.id:'makati';const t=getTherapists(bid);t.splice(i,1);sv('hhh_therapists_'+bid,t);renderTherapistSettings();renderCIPanel();}
 
 // ================================================================
 // SETTINGS
