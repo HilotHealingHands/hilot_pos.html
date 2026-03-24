@@ -900,7 +900,7 @@ function renderSessions(){
     const isOver=remaining<0;
     const absR=Math.abs(remaining);
     const mins=Math.floor(absR/60);const secs=Math.floor(absR%60);
-    const display=(isOver?'+ ':'')+(mins>0?mins+'m ':'')+secs+'s';
+    const display=(isOver?'OVER +':'')+mins+':'+(secs<10?'0':'')+secs;
     const timerClass=isOver?'over':remaining<300?'warn':'ok';
     const cardClass=isOver?'expired':remaining<300?'warning':'';
     const client=clients[s.clientPhone]||null;
@@ -920,7 +920,10 @@ function renderSessions(){
           </div>
           ${s.extensions&&s.extensions.length?`<div style="font-size:10px;color:var(--amber);margin-top:3px;">+${s.extensions.length} extension${s.extensions.length>1?'s':''}</div>`:''}
         </div>
-        <div class="sc-timer ${timerClass}${isOver?' pulse':''}">${isOver?'⏰':'⏱'} ${display}</div>
+        <div style="text-align:right;">
+          <div class="sc-timer ${timerClass}${isOver?' pulse':''}">${display}</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">${isOver?'Session ended':'of '+s.duration+' min'}</div>
+        </div>
       </div>
       <div class="sc-actions">
         <button class="btn-extend" onclick="extendSession('${s.id}')">+30 min</button>
