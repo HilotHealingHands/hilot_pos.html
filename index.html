@@ -413,6 +413,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="ci-section-label">Service</div>
         <div class="ci-svc-cats" id="ci-cats"></div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:5px;">Select main service, then tap <b>Add-Ons</b> to add extras (Portable Bed, Hot Stone, etc.)</div>
         <div class="ci-svc-list" id="ci-svc-list"></div>
         <div class="ci-sel-display" id="ci-sel-display"></div>
         <div class="ci-section-label">Therapist</div>
@@ -965,13 +966,16 @@ function cancelSession(id){
 // CHECK-IN PANEL
 // ================================================================
 function renderCIPanel(){
-  // Categories
+  // Categories — always rebuild from SERVICES constant
   const cats=[...new Set(SERVICES.filter(s=>s.cat!=='Extension').map(s=>s.cat))];
   document.getElementById('ci-cats').innerHTML=cats.map(c=>`<span class="ci-cat${c===ciCategory?' active':''}" onclick="setCICat('${c}')">${c}</span>`).join('');
   renderCIServices();
-  // Therapists
+  // Therapists — load from localStorage with correct branch fallback
   const bid=currentBranch?currentBranch.id:'makati';
-  const therapists=ld('hhh_therapists_'+bid,DEFAULT_THERAPISTS[bid]||[]);
+  const stored=ld('hhh_therapists_'+bid,null);
+  const therapists=stored!==null?stored:(DEFAULT_THERAPISTS[bid]||[]);
+  // Save defaults if nothing stored yet
+  if(stored===null&&therapists.length>0)sv('hhh_therapists_'+bid,therapists);
   document.getElementById('ci-therapist').innerHTML='<option value="">— Any therapist —</option>'+therapists.map(t=>`<option value="${t}">${t}</option>`).join('');
 }
 function setCICat(cat){
@@ -1651,7 +1655,9 @@ async function submitEOD(){
 // ================================================================
 function renderTherapistSettings(){
   const bid=currentBranch?currentBranch.id:'makati';
-  const t=ld('hhh_therapists_'+bid,DEFAULT_THERAPISTS[bid]||[]);
+  const stored=ld('hhh_therapists_'+bid,null);
+  const t=stored!==null?stored:(DEFAULT_THERAPISTS[bid]||[]);
+  if(stored===null&&t.length>0)sv('hhh_therapists_'+bid,t);
   const el=document.getElementById('therapist-settings-list');
   if(!t.length){el.innerHTML='<div style="padding:10px 12px;color:var(--t3);font-size:11px;">No therapists yet.</div>';return;}
   el.innerHTML=t.map((x,i)=>`<div class="settings-row"><input class="sinp" style="flex:1;text-align:left;" value="${x}" onchange="updateTherapist(${i},this.value)"><button onclick="removeTherapist(${i})" style="background:none;border:none;color:var(--coral);font-size:14px;cursor:pointer;padding:0 0 0 7px;">✕</button></div>`).join('');
