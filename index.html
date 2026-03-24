@@ -108,7 +108,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .ci-svc-cats{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
 .ci-cat{padding:4px 9px;border-radius:14px;font-size:10px;font-weight:600;border:1px solid var(--br);background:white;color:var(--t2);cursor:pointer;}
 .ci-cat.active{background:var(--teal);color:white;border-color:var(--teal);}
-.ci-svc-list{max-height:200px;overflow-y:auto;border:1px solid var(--br);border-radius:var(--rs);background:white;margin-bottom:8px;}
+.ci-svc-list{max-height:320px;overflow-y:auto;border:1px solid var(--br);border-radius:var(--rs);background:white;margin-bottom:8px;}
 .ci-svc-item{padding:8px 10px;border-bottom:1px solid rgba(0,0,0,0.05);cursor:pointer;}
 .ci-svc-item:last-child{border-bottom:none;}
 .ci-svc-item:active,.ci-svc-item.sel{background:var(--tl);}
@@ -649,12 +649,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <button class="dbc" id="co-disc-custom-btn" onclick="toggleCoCustomDisc()">Custom %</button>
       <input type="number" id="co-disc-custom-val" placeholder="%" min="0" max="100" style="width:55px;padding:4px 6px;border:1px solid var(--br);border-radius:6px;font-size:11px;display:none;outline:none;" oninput="applyCoCustomDisc()">
     </div>
-    <div class="sh" style="margin-top:8px;margin-bottom:6px;">Manager Adjustment</div>
-    <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap;">
-      <button id="co-adj-toggle" onclick="toggleAdjDir()" style="padding:5px 10px;border:1px solid var(--br);border-radius:6px;background:var(--cl);color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;min-width:32px;">−</button>
-      <input type="number" id="co-adj-amount" placeholder="Amount ₱" min="0" style="width:90px;padding:6px 8px;border:1px solid var(--br);border-radius:6px;font-size:13px;outline:none;" oninput="recalcCoAdj()">
-      <input type="text" id="co-adj-note" placeholder="Reason (required if used)" style="flex:1;padding:6px 8px;border:1px solid var(--br);border-radius:6px;font-size:12px;outline:none;min-width:120px;">
-    </div>
     <div class="sh" style="margin-top:4px;margin-bottom:8px;">Payment Method</div>
     <div class="pay-methods-grid">
       <div class="pm sel" data-method="cash" onclick="selCoPayMethod(this)"><div class="pm-icon">💵</div><div class="pm-name">Cash</div></div>
@@ -687,6 +681,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
     <div id="co-digital-section" style="display:none">
       <input type="text" id="co-ref" style="width:100%;padding:7px 9px;border:1px solid var(--br);border-radius:6px;font-size:12px;outline:none;margin-bottom:10px;" placeholder="Reference # (optional)">
+    </div>
+    <div style="background:var(--cl);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--coral);margin-bottom:7px;">Manager Price Adjustment (optional)</div>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <button id="co-adj-toggle" onclick="toggleAdjDir()" style="padding:6px 12px;border:1px solid var(--coral);border-radius:6px;background:white;color:var(--coral);font-size:13px;font-weight:700;cursor:pointer;min-width:40px;">− Deduct</button>
+        <input type="number" id="co-adj-amount" placeholder="₱ Amount" min="0" style="width:100px;padding:6px 8px;border:1.5px solid var(--coral);border-radius:6px;font-size:14px;font-weight:600;outline:none;" oninput="recalcCoAdj()">
+        <input type="text" id="co-adj-note" placeholder="Reason (e.g. client complaint)" style="flex:1;padding:6px 8px;border:1px solid var(--br);border-radius:6px;font-size:12px;outline:none;min-width:120px;">
+      </div>
     </div>
     <button class="btn-co-confirm" onclick="confirmCheckout()">Confirm Payment</button>
     <button class="btn-co-cancel" onclick="closeCheckout()">Cancel</button>
@@ -989,38 +991,57 @@ function setCICat(cat){
 function renderCIServices(){
   const svcs=SERVICES.filter(s=>s.cat===ciCategory);
   const el=document.getElementById('ci-svc-list');
-  el.innerHTML=svcs.map(s=>s.prices.map(p=>`
-    <div class="ci-svc-item${ciSelectedServices.some(x=>x.sid===s.id&&x.label===p.label)?' sel':''}"
-      onclick="toggleCISvc('${s.id}','${p.label}',${p.price},${p.dur},'${escQ(s.name)}')">
+  el.innerHTML=svcs.map(s=>s.prices.map(p=>{
+    const isAddon=s.cat==='Add-Ons';
+    const sel=ciSelectedServices.some(x=>x.sid===s.id&&x.label===p.label);
+    return`<div class="ci-svc-item${sel?' sel':''}"
+      onclick="toggleCISvc('${s.id}','${p.label}',${p.price},${p.dur},${isAddon})">
       <span class="ci-svc-name">${s.name}${s.prices.length>1?' — '+p.label:''}</span>
       <span class="ci-svc-price">₱${p.price.toLocaleString()}</span>
       <div class="ci-svc-dur">${p.dur>0?p.dur+' min':'Add-on'}</div>
-    </div>`).join('')).join('');
+    </div>`;
+  }).join('')).join('');
   // Show transport row if Home Service is selected (regardless of current tab)
   const hasHomeService=ciSelectedServices.some(x=>x.sid==='s7');
   document.getElementById('ci-transport-row').style.display=(ciCategory==='Home Service'||hasHomeService)?'flex':'none';
 }
 function escQ(s){return s.replace(/'/g,"\\'");}
-function toggleCISvc(sid,label,price,dur,name){
+function toggleCISvc(sid,label,price,dur,isAddon){
+  const svcObj=SERVICES.find(s=>s.id===sid);
+  const name=svcObj?svcObj.name:sid;
   const idx=ciSelectedServices.findIndex(x=>x.sid===sid&&x.label===label);
   if(idx>-1){
     ciSelectedServices.splice(idx,1);
   } else {
-    // If this is a primary service (not Add-On), replace any existing primary service
-    const svc=SERVICES.find(s=>s.id===sid);
-    const isAddon=svc&&svc.cat==='Add-Ons';
     if(!isAddon){
-      // Remove any previously selected primary service (non-add-on)
-      ciSelectedServices=ciSelectedServices.filter(x=>{
-        const s=SERVICES.find(sv=>sv.id===x.sid);
-        return s&&s.cat==='Add-Ons';
-      });
+      ciSelectedServices=ciSelectedServices.filter(x=>x.isAddon);
     }
     ciSelectedServices.push({sid,label,price,dur,name,isAddon:!!isAddon});
   }
   renderCIServices();
   updateCISelDisplay();
   checkCIReady();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
 function updateCISelDisplay(){
   const disp=document.getElementById('ci-sel-display');
@@ -1135,7 +1156,8 @@ function openCheckout(id){
   coAdjDir=-1;coAdjAmount=0;
   document.getElementById('co-adj-amount').value='';
   document.getElementById('co-adj-note').value='';
-  const adjBtn=document.getElementById('co-adj-toggle');adjBtn.textContent='−';adjBtn.style.background='var(--cl)';adjBtn.style.color='var(--coral)';
+  const adjBtn=document.getElementById('co-adj-toggle');
+  adjBtn.textContent='− Deduct';adjBtn.style.borderColor='var(--coral)';adjBtn.style.color='var(--coral)';
   document.getElementById('checkout-modal').style.display='flex';
 }
 function closeCheckout(){document.getElementById('checkout-modal').style.display='none';checkoutSessionId=null;}
@@ -1183,7 +1205,15 @@ function toggleCoCustomDisc(){
   const s=activeSessions.find(x=>x.id===checkoutSessionId);if(s)renderCoLines(s);
 }
 function applyCoCustomDisc(){coDiscPct=Math.min(100,Math.max(0,parseFloat(document.getElementById('co-disc-custom-val').value)||0));coDiscMode='custom';const s=activeSessions.find(x=>x.id===checkoutSessionId);if(s)renderCoLines(s);}
-function toggleAdjDir(){coAdjDir=coAdjDir<0?1:-1;const btn=document.getElementById('co-adj-toggle');btn.textContent=coAdjDir<0?'−':'+';btn.style.background=coAdjDir<0?'var(--cl)':'var(--gl)';btn.style.color=coAdjDir<0?'var(--coral)':'var(--green)';const s=activeSessions.find(x=>x.id===checkoutSessionId);if(s)renderCoLines(s);}
+function toggleAdjDir(){
+  coAdjDir=coAdjDir<0?1:-1;
+  const btn=document.getElementById('co-adj-toggle');
+  btn.textContent=coAdjDir<0?'− Deduct':'+ Add';
+  btn.style.borderColor=coAdjDir<0?'var(--coral)':'var(--teal)';
+  btn.style.color=coAdjDir<0?'var(--coral)':'var(--teal)';
+  const s=activeSessions.find(x=>x.id===checkoutSessionId);
+  if(s)renderCoLines(s);
+}
 function recalcCoAdj(){coAdjAmount=parseFloat(document.getElementById('co-adj-amount').value)||0;const s=activeSessions.find(x=>x.id===checkoutSessionId);if(s)renderCoLines(s);}
 function selCoPayMethodName(n){document.querySelectorAll('.pm').forEach(e=>e.classList.toggle('sel',e.dataset.method===n));coPayMethod=n;document.getElementById('co-cash-section').style.display=n==='cash'?'block':'none';document.getElementById('co-gc-section').style.display=n==='giftcert'?'block':'none';document.getElementById('co-birthday-section').style.display=n==='birthday'?'block':'none';document.getElementById('co-digital-section').style.display=!['cash','birthday','loyalty'].includes(n)?'block':'none';}
 function selCoPayMethod(el){selCoPayMethodName(el.dataset.method);}
