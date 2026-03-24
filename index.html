@@ -1240,8 +1240,7 @@ async function confirmCheckout(){
   const commission=getCoCommission(s);
   if(coPayMethod==='cash'){const recv=parseFloat(document.getElementById('co-cash-tendered').value)||0;if(recv<total){alert('Cash tendered is less than total.');return;}}
   if(coPayMethod==='giftcert'){const code=document.getElementById('co-gc-code').value.trim().toUpperCase();const gc=giftCerts.find(g=>g.code===code&&g.status==='active');if(!gc){alert('Invalid or used gift certificate.');return;}if(gc.amount<total){alert(`Gift cert ₱${gc.amount.toLocaleString()} is less than total.`);return;}gc.status='used';gc.usedDate=new Date().toISOString();sv('hhh_giftcerts',giftCerts);}
-  const adjNote=document.getElementById('co-adj-note').value.trim();
-  if(coAdjAmount>0&&!adjNote){alert('Please enter a reason for the manager adjustment.');return;}
+  const adjNote=document.getElementById('co-adj-note').value.trim()||'Manager adjustment';
   const adj=coAdjDir*coAdjAmount;
   // Record visit
   if(s.clientPhone&&clients[s.clientPhone]){clients[s.clientPhone].visits=(clients[s.clientPhone].visits||0)+1;sv('hhh_clients',clients);}
