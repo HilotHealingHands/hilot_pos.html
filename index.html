@@ -929,34 +929,37 @@ function renderSessions(){
         </div>
       </div>
       <div class="sc-actions">
-        <button class="btn-extend" onclick="extendSession('${s.id}')">+30 min</button>
+        <button class="btn-extend" onclick="extendSession('${s.id}',30)">+30 min</button>
+        <button class="btn-extend" onclick="extendSession('${s.id}',60)" style="background:var(--tl);">+1 hr</button>
         <button class="btn-checkout" onclick="openCheckout('${s.id}')">Checkout →</button>
         <button class="btn-cancel-session" onclick="cancelSession('${s.id}')">✕</button>
       </div>
     </div>`;
   }).join('');
 }
-function extendSession(id){
-  const s=activeSessions.find(x=>x.id===id);if(!s)return;
-  // For Home Service: base extension on the actual session price (half of what they paid)
-  // For Body Treatments: base extension on the 60-min price (half)
-  let extPrice=0;
+function getExtPrice(s, mins){
+  // Always base extension on the PRIMARY service price only — never includes add-ons
+  const basePrice = s.primaryPrice || s.price - (s.addons||[]).reduce((a,x)=>a+x.price, 0);
   if(s.isHome){
-    // Use the actual price selected for this home service session
-    extPrice=Math.round(s.price/2);
+    // Home service: half of the primary price per 30 min
+    return Math.round(basePrice / (s.duration / 30) / 2) || Math.round(basePrice / 2);
   } else {
-    const baseSvc=SERVICES.find(sv=>sv.id===s.serviceId);
-    if(baseSvc){const p60=baseSvc.prices.find(p=>p.dur===60||p.label.includes('60'));if(p60)extPrice=Math.round(p60.price/2);}
+    // Body treatment: use 60-min rate as base, half = 30 min price
+    const baseSvc = SERVICES.find(sv=>sv.id===s.serviceId);
+    const p60 = baseSvc ? baseSvc.prices.find(p=>p.dur===60||p.label.includes('60')) : null;
+    const rate30 = p60 ? Math.round(p60.price / 2) : Math.round(basePrice / 2);
+    return mins === 60 ? rate30 * 2 : rate30;
   }
-  if(extPrice===0)extPrice=300;// fallback
-  s.duration+=30;
-  s.extensions=s.extensions||[];
-  s.extensions.push({price:extPrice,at:Date.now()});
-  sv('hhh_sessions',activeSessions);
+}
+function extendSession(id, mins){
+  mins = mins || 30;
+  const s = activeSessions.find(x=>x.id===id); if(!s)return;
+  const extPrice = getExtPrice(s, mins);
+  s.duration += mins;
+  s.extensions = s.extensions||[];
+  s.extensions.push({price:extPrice, mins:mins, at:Date.now()});
+  sv('hhh_sessions', activeSessions);
   renderSessions();
-  // Show confirmation
-  const card=document.querySelector(`[onclick="extendSession('${id}')"]`);
-  if(card)card.textContent=`+30 added · ₱${extPrice.toLocaleString()}`;
 }
 function cancelSession(id){
   if(!confirm('Cancel this session? No charge will be recorded.'))return;
@@ -1102,6 +1105,7 @@ function startSession(){
     clientName:name,clientPhone:phone,
     serviceId:primarySvc.sid,serviceName:primarySvc.name,
     priceLabel:primarySvc.label,price:totalPrice,
+    primaryPrice:primarySvc.price,
     addons:addons,serviceDisplay,
     duration:totalDur,therapist,transport,
     isHome:ciCategory==='Home Service'||primarySvc.sid==='s7',
@@ -1178,7 +1182,7 @@ function renderCoLines(s){
   const total=Math.max(0,after+vat+transport+adj);
   let html=`<div class="co-line"><span>${s.serviceName}${s.priceLabel?' ('+s.priceLabel+')':''}</span><span>₱${(s.price-(s.addons||[]).reduce((a,x)=>a+x.price,0)).toLocaleString()}</span></div>`;
   (s.addons||[]).forEach(a=>html+=`<div class="co-line"><span>+ ${a.name}</span><span>₱${a.price.toLocaleString()}</span></div>`);
-  (s.extensions||[]).forEach((e,i)=>html+=`<div class="co-line"><span>Extension +30 min ${i+1}</span><span>₱${e.price.toLocaleString()}</span></div>`);
+  (s.extensions||[]).forEach((e,i)=>html+=`<div class="co-line"><span>Extension +${e.mins||30} min (${i+1})</span><span>₱${e.price.toLocaleString()}</span></div>`);
   if(transport>0)html+=`<div class="co-line" style="color:var(--amber)"><span>🏠 Transport Fee</span><span>₱${transport.toLocaleString()}</span></div>`;
   if(coDiscPct>0)html+=`<div class="co-line" style="color:var(--coral)"><span>Discount (${coDiscPct}%)</span><span>-₱${disc.toLocaleString()}</span></div>`;
   if(settings.vatEnabled)html+=`<div class="co-line"><span>VAT (${settings.vatRate}%)</span><span>₱${vat.toLocaleString()}</span></div>`;
@@ -1242,7 +1246,7 @@ async function confirmCheckout(){
     items:[
       {name:s.serviceName+(s.priceLabel?' ('+s.priceLabel+')':''),price:s.price-(s.addons||[]).reduce((a,x)=>a+x.price,0),qty:1},
       ...(s.addons||[]).map(a=>({name:a.name,price:a.price,qty:1})),
-      ...(s.extensions||[]).map((e,i)=>({name:`Extension +30 min ${i+1}`,price:e.price,qty:1}))
+      ...(s.extensions||[]).map((e,i)=>({name:`Extension +${e.mins||30} min (${i+1})`,price:e.price,qty:1}))
     ],
     subtotal:sub,transport:s.transport||0,discount:disc,discountPct:coDiscPct,vat,
     managerAdj:adj||0,managerAdjNote:adjNote||'',
