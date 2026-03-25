@@ -1868,6 +1868,7 @@ function showSnapshot(branchName, branchId){
 function dismissSnapshot(){
   const snap=document.getElementById('revenue-snapshot');
   snap.style.display='none';
+  if(isDemoMode) showDemoStep();
 }
 
 // ================================================================
@@ -1893,22 +1894,6 @@ const DEMO_STEPS=[
   {title:'Reports & Pay Slips',desc:'Reports show revenue, sessions, and therapist commissions for any period. Pay Slips generate a printable weekly commission summary per therapist with signature lines.',action:'demo-reports',highlight:null},
   {title:'Ready to Go!',desc:'This system runs entirely in your browser — no app to install, no monthly fees. Upload it to your GitHub once and every branch accesses it from any device.',action:null,highlight:null},
 ];
-function startDemo(){
-  isDemoMode=true;demoStep=0;
-  currentBranch=BRANCHES.makati;
-  window._realTxns=transactions;window._realSessions=activeSessions;window._realClients=clients;
-  transactions=[...DEMO_TRANSACTIONS];
-  activeSessions=[...DEMO_SESSIONS];
-  clients={...DEMO_CLIENTS};
-  document.getElementById('pos-branch-title').textContent='Makati Branch (DEMO)';
-  document.getElementById('pos-date').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  document.getElementById('sch-branch-sub').textContent='Makati Branch (DEMO)';
-  document.getElementById('appt-branch-sub').textContent='Makati Branch (DEMO)';
-  document.getElementById('sch-today-lbl').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',month:'short',day:'numeric'});
-  renderNavs();renderCIPanel();renderSessions();startTimerTick();
-  showScreen('screen-pos');
-  showDemoStep();
-}
 function showDemoStep(){
   removeDemoOverlay();
   if(demoStep>=DEMO_STEPS.length){exitDemo();return;}
@@ -2027,6 +2012,8 @@ function startDemo(){
   },100);
   showScreen('screen-pos');
   showSnapshot('Makati Branch (DEMO)','makati');
+  // Show guided walkthrough after snapshot auto-dismisses (4 seconds + small buffer)
+  setTimeout(()=>showDemoStep(), 4500);
   // Restore real data reference
   window._realTxns=realTxns;window._realSessions=realSessions;window._realClients=realClients;
 }
