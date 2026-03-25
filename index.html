@@ -1863,12 +1863,12 @@ function showSnapshot(branchName, branchId){
   const snap=document.getElementById('revenue-snapshot');
   snap.style.display='flex';
   // Auto-dismiss after 4 seconds
-  setTimeout(()=>dismissSnapshot(),4000);
+  setTimeout(()=>dismissSnapshot(), 4000);
 }
 function dismissSnapshot(){
   const snap=document.getElementById('revenue-snapshot');
   snap.style.display='none';
-  if(isDemoMode) showDemoStep();
+  if(isDemoMode) setTimeout(()=>showDemoStep(), 300);
 }
 
 // ================================================================
@@ -2012,9 +2012,7 @@ function startDemo(){
   },100);
   showScreen('screen-pos');
   showSnapshot('Makati Branch (DEMO)','makati');
-  // Show guided walkthrough after snapshot auto-dismisses (4 seconds + small buffer)
-  setTimeout(()=>showDemoStep(), 4500);
-  // Restore real data reference
+  // dismissSnapshot() handles showing the demo overlay after snapshot clears
   window._realTxns=realTxns;window._realSessions=realSessions;window._realClients=realClients;
 }
 function exitDemo(){
