@@ -338,6 +338,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 .nav-icon{font-size:17px;}
 .nav-label{font-size:9px;font-weight:500;white-space:nowrap;}
 
+@media print{
+  body>*{display:none!important;}
+  #print-daily-report{display:block!important;}
+  #print-daily-report{font-family:Arial,sans-serif;padding:24px;color:#000;}
+  #print-daily-report h1{font-size:20px;margin-bottom:2px;color:#085041;}
+  #print-daily-report h2{font-size:13px;color:#888;font-weight:normal;margin-bottom:16px;}
+  #print-daily-report table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:16px;}
+  #print-daily-report th{background:#085041;color:white;padding:6px 8px;text-align:left;}
+  #print-daily-report td{padding:5px 8px;border-bottom:1px solid #eee;}
+  #print-daily-report .summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+  #print-daily-report .summary-box{border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;}
+  #print-daily-report .summary-val{font-size:18px;font-weight:700;color:#085041;}
+  #print-daily-report .summary-lbl{font-size:10px;color:#888;margin-top:2px;}
+  #print-daily-report .sig{display:flex;justify-content:space-between;margin-top:40px;}
+  #print-daily-report .sig-line{border-top:1px solid #333;width:180px;padding-top:4px;font-size:10px;color:#888;}
+  #print-daily-report .highlight{background:#E1F5EE;}
+}
+.demo-banner{background:var(--amber);color:white;padding:6px 14px;font-size:11px;font-weight:700;text-align:center;letter-spacing:0.5px;display:flex;justify-content:space-between;align-items:center;}
+.demo-banner button{background:rgba(255,255,255,0.2);border:none;color:white;padding:3px 10px;border-radius:10px;font-size:11px;cursor:pointer;font-weight:600;}
 @media(max-width:700px){
   .pos-split{flex-direction:column;}
   .checkin-panel{width:100%;border-left:none;border-top:1px solid var(--br);max-height:48vh;}
@@ -373,7 +392,35 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       </div>
       <div class="pe" id="pin-error"></div>
     </div>
+    <button onclick="startDemo()" style="margin-top:20px;padding:10px 24px;border:1.5px solid rgba(255,255,255,0.3);border-radius:20px;background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.7);font-size:13px;cursor:pointer;letter-spacing:0.5px;">▶ Try Demo</button>
   </div>
+</div>
+
+<!-- REVENUE SNAPSHOT OVERLAY -->
+<div id="revenue-snapshot" style="display:none;position:fixed;inset:0;background:var(--td);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px;">
+  <div style="font-size:12px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;" id="snap-greeting"></div>
+  <div style="font-family:var(--font);font-size:22px;color:white;margin-bottom:6px;" id="snap-branch"></div>
+  <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-bottom:40px;" id="snap-date"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;width:100%;max-width:320px;margin-bottom:40px;">
+    <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:16px;text-align:center;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Today's Revenue</div>
+      <div style="font-size:28px;font-weight:700;color:white;" id="snap-revenue">₱0</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:16px;text-align:center;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Sessions Today</div>
+      <div style="font-size:28px;font-weight:700;color:white;" id="snap-sessions">0</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:16px;text-align:center;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Top Service</div>
+      <div style="font-size:13px;font-weight:600;color:white;margin-top:4px;" id="snap-top">—</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.08);border-radius:14px;padding:16px;text-align:center;">
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Active Now</div>
+      <div style="font-size:28px;font-weight:700;color:#5DCAA5;" id="snap-active">0</div>
+    </div>
+  </div>
+  <button onclick="dismissSnapshot()" style="padding:12px 32px;border:1.5px solid rgba(255,255,255,0.3);border-radius:20px;background:rgba(255,255,255,0.1);color:white;font-size:14px;cursor:pointer;">Enter →</button>
+  <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:12px;">Tap to continue</div>
 </div>
 
 <!-- MAIN POS -->
@@ -523,7 +570,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div id="therapist-report"></div>
     <div class="sh">Transactions</div>
     <div class="txn-list" id="txn-list"></div>
-    <div style="margin-top:9px;"><button onclick="exportCSV()" style="padding:7px 13px;border:1px solid var(--teal);border-radius:6px;background:white;color:var(--teal);font-size:11px;font-weight:600;cursor:pointer;">Export CSV</button></div>
+    <div style="margin-top:9px;display:flex;gap:8px;">
+      <button onclick="exportCSV()" style="padding:7px 13px;border:1px solid var(--teal);border-radius:6px;background:white;color:var(--teal);font-size:11px;font-weight:600;cursor:pointer;">Export CSV</button>
+      <button onclick="printDailyReport()" style="padding:7px 13px;border:1px solid var(--td);border-radius:6px;background:white;color:var(--td);font-size:11px;font-weight:600;cursor:pointer;">🖨 Print Day Report</button>
+    </div>
   </div>
   <div class="bottom-nav" id="reports-nav"></div>
 </div>
@@ -573,14 +623,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div id="eod-attendance"></div>
     </div>
     <button class="btn-eod" onclick="submitEOD()">Submit & Sync End of Day</button>
+    <button onclick="printDailyReport()" style="width:100%;padding:12px;border-radius:var(--rs);border:1.5px solid var(--td);background:white;color:var(--td);font-size:13px;font-weight:600;cursor:pointer;margin-top:7px;">🖨 Print Day Report</button>
   </div>
   <div class="bottom-nav" id="eod-nav"></div>
 </div>
 
 <!-- OWNER DASHBOARD -->
 <div class="screen" id="screen-owner">
-  <div class="tb" style="background:#2C2C2A;"><div><div class="tt">HHH Corporate</div><div class="ts">All Branches</div></div></div>
+  <div class="tb" style="background:#2C2C2A;"><div><div class="tt">HHH Corporate</div><div class="ts">All Branches — Live View</div></div></div>
   <div class="owner-wrap">
+    <!-- Live Network Summary -->
+    <div style="background:linear-gradient(135deg,#085041,#0F6E56);border-radius:var(--r);padding:16px;margin-bottom:14px;color:white;">
+      <div style="font-size:10px;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;">Network Summary</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;">
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:700;" id="owner-net-rev">₱0</div><div style="font-size:10px;opacity:0.6;margin-top:2px;">Revenue</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:700;" id="owner-net-sessions">0</div><div style="font-size:10px;opacity:0.6;margin-top:2px;">Sessions</div></div>
+        <div style="text-align:center;"><div style="font-size:22px;font-weight:700;color:#5DCAA5;" id="owner-net-active">0</div><div style="font-size:10px;opacity:0.6;margin-top:2px;">Active Now</div></div>
+      </div>
+      <div style="font-size:11px;opacity:0.6;" id="owner-best-branch"></div>
+    </div>
     <div class="pr">
       <button class="pb active" onclick="setOwnerPeriod('today',this)">Today</button>
       <button class="pb" onclick="setOwnerPeriod('week',this)">Week</button>
@@ -589,9 +650,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     </div>
     <div class="sh">Live Attendance</div>
     <div class="att-grid" id="owner-attendance"></div>
-    <div class="sh">Network Revenue</div>
-    <div class="omg" id="owner-network"></div>
-    <div class="sh">By Branch</div>
+    <div class="sh">Branch Performance</div>
     <div id="owner-branches"></div>
   </div>
   <div class="bottom-nav" id="owner-nav"></div>
@@ -853,6 +912,7 @@ function loginAs(bid){
   document.getElementById('appt-branch-sub').textContent=currentBranch.name;
   renderNavs();renderCIPanel();renderSessions();startTimerTick();
   showScreen('screen-pos');
+  showSnapshot(currentBranch.name, bid);
 }
 function logout(){if(!confirm('Log out?'))return;currentBranch=null;stopTimerTick();showScreen('screen-login');}
 
@@ -1632,27 +1692,6 @@ function renderReports(){
 // ================================================================
 // OWNER DASHBOARD
 // ================================================================
-function setOwnerPeriod(p,btn){ownerPeriod=p;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderOwnerDashboard();}
-function renderOwnerDashboard(){
-  const bids=Object.keys(BRANCHES).filter(b=>b!=='hhh');
-  const allTxns=filterTxns(ownerPeriod,null).filter(t=>t.branch!=='hhh');
-  const netRev=allTxns.reduce((a,t)=>a+t.total,0);
-  const today=new Date().toISOString().split('T')[0];
-  document.getElementById('owner-attendance').innerHTML=bids.map(bid=>{
-    const b=BRANCHES[bid];const logs=ld('hhh_clocklogs_'+bid,[]).filter(l=>l.date===today);
-    const therapists=getTherapists(bid);
-    const rows=therapists.map(name=>{const log=logs.find(l=>l.name===name);const status=log&&log.clockIn&&!log.clockOut?(log.late?'🔴':'🟢'):log&&log.clockOut?'⬜':'○';return`<div class="att-row"><span class="att-name">${status} ${name}</span><span class="att-time">${log&&log.clockIn?fmt12Time(log.clockIn):''}</span></div>`;}).join('')||'<div style="font-size:10px;color:var(--t3);">No therapists</div>';
-    return`<div class="att-card"><div class="att-branch-lbl">${b.icon} ${b.name}</div>${rows}</div>`;
-  }).join('');
-  document.getElementById('owner-network').innerHTML=`<div class="mc"><div class="ml">Network Revenue</div><div class="mv">₱${netRev.toLocaleString()}</div></div><div class="mc"><div class="ml">Sessions</div><div class="mv">${allTxns.length}</div></div><div class="mc"><div class="ml">Avg / Branch</div><div class="mv">₱${bids.length?Math.round(netRev/bids.length).toLocaleString():'0'}</div></div>`;
-  document.getElementById('owner-branches').innerHTML=bids.map(bid=>{
-    const b=BRANCHES[bid];const bt=filterTxns(ownerPeriod,bid);const br=bt.reduce((a,t)=>a+t.total,0);const ba=bt.length?Math.round(br/bt.length):0;
-    const svc={};bt.forEach(t=>t.items.forEach(i=>{svc[i.name]=(svc[i.name]||0)+1;}));const top=Object.entries(svc).sort((a,b)=>b[1]-a[1])[0];
-    const bc=bt.reduce((a,t)=>a+(t.commission||0),0);
-    return`<div class="brc"><div class="brc-title"><span>${b.icon}</span>${b.name}</div><div class="omg"><div class="mc"><div class="ml">Revenue</div><div class="mv" style="font-size:14px;">₱${br.toLocaleString()}</div></div><div class="mc"><div class="ml">Sessions</div><div class="mv" style="font-size:14px;">${bt.length}</div></div><div class="mc"><div class="ml">Avg</div><div class="mv" style="font-size:14px;">₱${ba.toLocaleString()}</div></div></div><div style="font-size:10px;color:var(--t2);display:flex;justify-content:space-between;"><span>Top: <b>${top?top[0].substring(0,20):'—'}</b></span><span style="color:var(--amber);">Comm: ₱${bc.toLocaleString()}</span></div></div>`;
-  }).join('');
-}
-
 // ================================================================
 // GIFT CERTS
 // ================================================================
@@ -1780,8 +1819,226 @@ function clearLocalData(){if(!confirm('Clear ALL local data? Google Sheets NOT a
 // ================================================================
 // INIT
 // ================================================================
+// ================================================================
+// REVENUE SNAPSHOT
+// ================================================================
+function showSnapshot(branchName, branchId){
+  const now=new Date();
+  const hour=now.getHours();
+  const greeting=hour<12?'Good Morning':hour<17?'Good Afternoon':'Good Evening';
+  document.getElementById('snap-greeting').textContent=greeting;
+  document.getElementById('snap-branch').textContent=branchName;
+  document.getElementById('snap-date').textContent=now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const bid=branchId==='hhh'?null:branchId;
+  const todayTxns=transactions.filter(t=>{
+    if(bid&&t.branch!==bid)return false;
+    return new Date(t.date).toDateString()===now.toDateString();
+  });
+  const rev=todayTxns.reduce((a,t)=>a+t.total,0);
+  const svc={};todayTxns.forEach(t=>t.items.forEach(i=>{svc[i.name]=(svc[i.name]||0)+1;}));
+  const top=Object.entries(svc).sort((a,b)=>b[1]-a[1])[0];
+  const activeBranch=activeSessions.filter(s=>!bid||s.branch===bid);
+  document.getElementById('snap-revenue').textContent='₱'+rev.toLocaleString();
+  document.getElementById('snap-sessions').textContent=todayTxns.length;
+  document.getElementById('snap-top').textContent=top?top[0].split(' ').slice(0,3).join(' '):'—';
+  document.getElementById('snap-active').textContent=activeBranch.length;
+  const snap=document.getElementById('revenue-snapshot');
+  snap.style.display='flex';
+  // Auto-dismiss after 4 seconds
+  setTimeout(()=>dismissSnapshot(),4000);
+}
+function dismissSnapshot(){
+  const snap=document.getElementById('revenue-snapshot');
+  snap.style.display='none';
+}
+
+// ================================================================
+// DEMO MODE
+// ================================================================
+let isDemoMode=false;
+const DEMO_TRANSACTIONS=[
+  {id:'DEMO001',date:new Date(Date.now()-3600000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Maria Santos',clientPhone:'09171234567',therapist:'Ate Maria',items:[{name:'Hilot w/ Banana Leaves (90 min)',price:799,qty:1}],subtotal:799,transport:0,discount:0,discountPct:0,vat:0,total:799,commission:160,payMethod:'cash',tendered:800,change:1,sessionStartTime:Date.now()-7200000,durationMins:90,extensions:[]},
+  {id:'DEMO002',date:new Date(Date.now()-7200000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Juan dela Cruz',clientPhone:'09181234567',therapist:'Kuya Juan',items:[{name:'Hilot Combination Massage (60 min)',price:599,qty:1},{name:'Hot Stone with Aroma Oil',price:300,qty:1}],subtotal:899,transport:0,discount:0,discountPct:0,vat:0,total:899,commission:180,payMethod:'gcash',tendered:899,change:0,sessionStartTime:Date.now()-9000000,durationMins:60,extensions:[]},
+  {id:'DEMO003',date:new Date(Date.now()-1800000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Rosa Reyes',clientPhone:'09191234567',therapist:'Aling Rosa',items:[{name:'Lymphatic Hilot Massage (90 min)',price:1499,qty:1}],subtotal:1499,transport:0,discount:179,discountPct:12,vat:0,total:1320,commission:264,payMethod:'cash',tendered:1400,change:80,sessionStartTime:Date.now()-5400000,durationMins:90,extensions:[]},
+  {id:'DEMO004',date:new Date(Date.now()-900000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Ana Gonzales',clientPhone:'09201234567',therapist:'Therapist A',items:[{name:'Hilot Swedish Massage (60 min)',price:599,qty:1}],subtotal:599,transport:0,discount:0,discountPct:0,vat:0,total:599,commission:120,payMethod:'card',tendered:599,change:0,sessionStartTime:Date.now()-4500000,durationMins:60,extensions:[]},
+  {id:'DEMO005',date:new Date(Date.now()-2700000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Pedro Lim',clientPhone:'09211234567',therapist:'Therapist B',items:[{name:'Special Package A',price:1849,qty:1}],subtotal:1849,transport:0,discount:0,discountPct:0,vat:0,total:1849,commission:370,payMethod:'gcash',tendered:1849,change:0,sessionStartTime:Date.now()-8100000,durationMins:120,extensions:[]},
+  {id:'DEMO006',date:new Date(Date.now()-5400000).toISOString(),branch:'siargao',branchName:'Siargao Branch',clientName:'Lani Cruz',clientPhone:'09221234567',therapist:'Therapist X',items:[{name:'Home Service (90 min)',price:849,qty:1},{name:'Portable Massage Bed',price:300,qty:1}],subtotal:1149,transport:150,discount:0,discountPct:0,vat:0,total:1299,commission:170,payMethod:'cash',tendered:1300,change:1,sessionStartTime:Date.now()-9000000,durationMins:90,extensions:[]}
+];
+const DEMO_SESSIONS=[
+  {id:'DSES001',branch:'makati',branchName:'Makati Branch',clientName:'Carlo Mendoza',clientPhone:'09301234567',serviceId:'s2',serviceName:'Hilot Swedish Massage',priceLabel:'90 min',price:799,primaryPrice:799,addons:[],serviceDisplay:'Hilot Swedish Massage (90 min)',duration:90,therapist:'Ate Maria',transport:0,isHome:false,startTime:Date.now()-2400000,extensions:[],date:new Date().toISOString()},
+  {id:'DSES002',branch:'makati',branchName:'Makati Branch',clientName:'Grace Tan',clientPhone:'09311234567',serviceId:'s5',serviceName:'Hilot Reflexology',priceLabel:'60 min',price:599,primaryPrice:599,addons:[],serviceDisplay:'Hilot Reflexology (60 min)',duration:60,therapist:'Kuya Juan',transport:0,isHome:false,startTime:Date.now()-1800000,extensions:[],date:new Date().toISOString()},
+  {id:'DSES003',branch:'sanjuan',branchName:'San Juan Branch',clientName:'Mia Reyes',clientPhone:'09321234567',serviceId:'s7',serviceName:'Home Service',priceLabel:'120 min',price:1449,primaryPrice:1149,addons:[{sid:'a13',name:'Portable Massage Bed',price:300,dur:0,isAddon:true}],serviceDisplay:'Home Service (120 min) + Portable Massage Bed',duration:120,therapist:'Therapist A',transport:200,isHome:true,startTime:Date.now()-3600000,extensions:[],date:new Date().toISOString()}
+];
+const DEMO_CLIENTS={
+  '09171234567':{name:'Maria Santos',phone:'09171234567',visits:9,birthday:'',address:'Makati City',notes:'Prefers firm pressure on lower back'},
+  '09181234567':{name:'Juan dela Cruz',phone:'09181234567',visits:5,birthday:'',address:'BGC, Taguig',notes:'First-time hot stone client'},
+  '09191234567':{name:'Rosa Reyes',phone:'09191234567',visits:20,birthday:new Date().toISOString().split('T')[0].substring(0,7)+'-15',address:'Pasay City',notes:'Senior citizen — 20% discount applies'},
+};
+function startDemo(){
+  isDemoMode=true;
+  currentBranch=BRANCHES.makati;
+  // Inject demo data without affecting real localStorage
+  const realTxns=transactions;const realSessions=activeSessions;const realClients=clients;
+  transactions=[...DEMO_TRANSACTIONS];
+  activeSessions=[...DEMO_SESSIONS];
+  clients={...DEMO_CLIENTS};
+  document.getElementById('pos-branch-title').textContent='Makati Branch (DEMO)';
+  document.getElementById('pos-date').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('sch-branch-sub').textContent='Makati Branch (DEMO)';
+  document.getElementById('appt-branch-sub').textContent='Makati Branch (DEMO)';
+  document.getElementById('sch-today-lbl').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',month:'short',day:'numeric'});
+  renderNavs();renderCIPanel();renderSessions();startTimerTick();
+  // Add demo banner to all screens
+  setTimeout(()=>{
+    document.querySelectorAll('.bottom-nav').forEach(nav=>{
+      if(!nav.previousElementSibling||!nav.previousElementSibling.classList.contains('demo-banner')){
+        const banner=document.createElement('div');
+        banner.className='demo-banner';
+        banner.innerHTML='⚡ DEMO MODE — Sample data only <button onclick="exitDemo()">Exit Demo</button>';
+        nav.parentNode.insertBefore(banner,nav);
+      }
+    });
+  },100);
+  showScreen('screen-pos');
+  showSnapshot('Makati Branch (DEMO)','makati');
+  // Restore real data reference
+  window._realTxns=realTxns;window._realSessions=realSessions;window._realClients=realClients;
+}
+function exitDemo(){
+  if(!confirm('Exit demo mode?'))return;
+  isDemoMode=false;
+  transactions=window._realTxns||[];
+  activeSessions=window._realSessions||[];
+  clients=window._realClients||{};
+  currentBranch=null;stopTimerTick();
+  document.querySelectorAll('.demo-banner').forEach(b=>b.remove());
+  showScreen('screen-login');
+}
+
+// ================================================================
+// PRINTABLE DAILY REPORT
+// ================================================================
+function printDailyReport(){
+  const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
+  const now=new Date();
+  const todayTxns=transactions.filter(t=>{
+    if(bid&&t.branch!==bid)return false;
+    return new Date(t.date).toDateString()===now.toDateString();
+  });
+  const rev=todayTxns.reduce((a,t)=>a+t.total,0);
+  const cash=todayTxns.filter(t=>t.payMethod==='cash').reduce((a,t)=>a+t.total,0);
+  const digital=rev-cash;
+  const transport=todayTxns.reduce((a,t)=>a+(t.transport||0),0);
+  const disc=todayTxns.reduce((a,t)=>a+(t.discount||0),0);
+  const comm=todayTxns.reduce((a,t)=>a+(t.commission||0),0);
+  // Therapist breakdown
+  const tdata={};
+  todayTxns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0,commission:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;tdata[t.therapist].commission+=t.commission||0;});
+  const therapistRows=Object.entries(tdata).map(([name,d])=>`<tr><td>${name}</td><td>${d.sessions}</td><td>₱${d.revenue.toLocaleString()}</td><td class="highlight">₱${d.commission.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#888;">No therapist data</td></tr>';
+  const txnRows=todayTxns.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>{
+    const d=new Date(t.date);
+    const pm={cash:'Cash',card:'Card',gcash:'GCash',paymaya:'PayMaya',giftcert:'Gift Cert',loyalty:'Loyalty',birthday:'Birthday'}[t.payMethod]||t.payMethod;
+    return`<tr><td>${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</td><td>${t.clientName||'—'}</td><td>${t.items[0]?t.items[0].name.substring(0,30):''}</td><td>${t.therapist||'—'}</td><td>${pm}</td><td>₱${t.total.toLocaleString()}</td></tr>`;
+  }).join('')||'<tr><td colspan="6" style="color:#888;">No transactions today</td></tr>';
+  document.getElementById('print-daily-report').innerHTML=`
+    <h1>Hilot Healing Hands — ${currentBranch?currentBranch.name:''}</h1>
+    <h2>Daily Report · ${now.toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} · Printed: ${now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</h2>
+    <div class="summary-grid">
+      <div class="summary-box"><div class="summary-val">₱${rev.toLocaleString()}</div><div class="summary-lbl">Total Revenue</div></div>
+      <div class="summary-box"><div class="summary-val">${todayTxns.length}</div><div class="summary-lbl">Sessions</div></div>
+      <div class="summary-box"><div class="summary-val">₱${cash.toLocaleString()}</div><div class="summary-lbl">Cash</div></div>
+      <div class="summary-box"><div class="summary-val">₱${digital.toLocaleString()}</div><div class="summary-lbl">Digital / Card</div></div>
+      <div class="summary-box"><div class="summary-val" style="color:#B85200;">₱${disc.toLocaleString()}</div><div class="summary-lbl">Discounts Given</div></div>
+      <div class="summary-box"><div class="summary-val">₱${transport.toLocaleString()}</div><div class="summary-lbl">Transport Fees</div></div>
+    </div>
+    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Commissions</h2>
+    <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th><th>Commission (${settings.commissionRate||20}%)</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td><td>₱${comm.toLocaleString()}</td></tr></tfoot></table>
+    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Transaction Log</h2>
+    <table><thead><tr><th>Time</th><th>Client</th><th>Service</th><th>Therapist</th><th>Payment</th><th>Total</th></tr></thead><tbody>${txnRows}</tbody></table>
+    <div class="sig">
+      <div class="sig-line">Manager Signature: ___________________</div>
+      <div class="sig-line">Cash Count Verified: ___________________</div>
+      <div class="sig-line">Date: ___________________</div>
+    </div>`;
+  window.print();
+}
+
+// ================================================================
+// POLISHED OWNER DASHBOARD
+// ================================================================
+function setOwnerPeriod(p,btn){ownerPeriod=p;document.querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderOwnerDashboard();}
+function renderOwnerDashboard(){
+  const bids=Object.keys(BRANCHES).filter(b=>b!=='hhh');
+  const allTxns=filterTxns(ownerPeriod,null).filter(t=>t.branch!=='hhh');
+  const netRev=allTxns.reduce((a,t)=>a+t.total,0);
+  const netSessions=allTxns.length;
+  const netActive=activeSessions.filter(s=>s.branch!=='hhh').length;
+  // Best branch
+  const branchRevs=bids.map(bid=>({bid,rev:filterTxns(ownerPeriod,bid).reduce((a,t)=>a+t.total,0),name:BRANCHES[bid].name}));
+  const best=branchRevs.sort((a,b)=>b.rev-a.rev)[0];
+  const maxRev=best?best.rev:1;
+  document.getElementById('owner-net-rev').textContent='₱'+netRev.toLocaleString();
+  document.getElementById('owner-net-sessions').textContent=netSessions;
+  document.getElementById('owner-net-active').textContent=netActive;
+  document.getElementById('owner-best-branch').textContent=best&&best.rev>0?'🏆 Top branch: '+best.name+' · ₱'+best.rev.toLocaleString():'No revenue recorded yet';
+  // Live attendance
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('owner-attendance').innerHTML=bids.map(bid=>{
+    const b=BRANCHES[bid];
+    const logs=ld('hhh_clocklogs_'+bid,[]).filter(l=>l.date===today);
+    const therapists=getTherapists(bid);
+    const rows=therapists.map(name=>{
+      const log=logs.find(l=>l.name===name);
+      const status=log&&log.clockIn&&!log.clockOut?(log.late?'🔴':'🟢'):log&&log.clockOut?'⬜':'○';
+      return`<div class="att-row"><span class="att-name">${status} ${name}</span><span class="att-time">${log&&log.clockIn?fmt12Time(log.clockIn):''}</span></div>`;
+    }).join('')||'<div style="font-size:10px;color:var(--t3);">No therapists</div>';
+    const branchActive=activeSessions.filter(s=>s.branch===bid).length;
+    return`<div class="att-card"><div class="att-branch-lbl">${b.icon} ${b.name}${branchActive>0?` · <span style="color:var(--teal);font-weight:700;">${branchActive} active</span>`:''}</div>${rows}</div>`;
+  }).join('');
+  // Branch performance cards with revenue bars
+  document.getElementById('owner-branches').innerHTML=bids.map(bid=>{
+    const b=BRANCHES[bid];
+    const bt=filterTxns(ownerPeriod,bid);
+    const br=bt.reduce((a,t)=>a+t.total,0);
+    const ba=bt.length?Math.round(br/bt.length):0;
+    const bc=bt.reduce((a,t)=>a+(t.commission||0),0);
+    const bTransport=bt.reduce((a,t)=>a+(t.transport||0),0);
+    const pct=maxRev>0?Math.round((br/maxRev)*100):0;
+    const svc={};bt.forEach(t=>t.items.forEach(i=>{svc[i.name]=(svc[i.name]||0)+1;}));
+    const top=Object.entries(svc).sort((a,b)=>b[1]-a[1])[0];
+    const branchActive=activeSessions.filter(s=>s.branch===bid).length;
+    const payBreak={cash:0,card:0,gcash:0,paymaya:0};
+    bt.forEach(t=>{if(payBreak[t.payMethod]!==undefined)payBreak[t.payMethod]+=t.total;});
+    // Compare vs yesterday
+    const yday=new Date();yday.setDate(yday.getDate()-1);
+    const ytxns=transactions.filter(t=>{if(t.branch!==bid)return false;return new Date(t.date).toDateString()===yday.toDateString();});
+    const yrev=ytxns.reduce((a,t)=>a+t.total,0);
+    const trend=ownerPeriod==='today'?(br>yrev?'📈':br<yrev?'📉':'➡'):'';
+    return`<div class="brc">
+      <div class="brc-title"><span style="font-size:16px;">${b.icon}</span>${b.name}${branchActive>0?`<span style="font-size:10px;background:var(--tl);color:var(--tm);padding:2px 7px;border-radius:10px;font-weight:600;">${branchActive} in session</span>`:''}${trend?`<span style="font-size:14px;">${trend}</span>`:''}</div>
+      <div style="background:var(--grl);border-radius:6px;height:8px;margin-bottom:10px;overflow:hidden;">
+        <div style="background:${pct>66?'var(--teal)':pct>33?'var(--amber)':'var(--coral)'};height:100%;width:${pct}%;border-radius:6px;transition:width 0.5s;"></div>
+      </div>
+      <div class="omg">
+        <div class="mc"><div class="ml">Revenue</div><div class="mv" style="font-size:15px;">₱${br.toLocaleString()}</div></div>
+        <div class="mc"><div class="ml">Sessions</div><div class="mv" style="font-size:15px;">${bt.length}</div></div>
+        <div class="mc"><div class="ml">Avg Sale</div><div class="mv" style="font-size:15px;">₱${ba.toLocaleString()}</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--t2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px;margin-top:5px;">
+        <span>🏆 ${top?top[0].substring(0,22):'—'}</span>
+        <span style="color:var(--amber);">Commission: ₱${bc.toLocaleString()}</span>
+        ${bTransport>0?`<span style="color:var(--amber-mid);">Transport: ₱${bTransport.toLocaleString()}</span>`:''}
+      </div>
+      <div style="font-size:10px;color:var(--t3);margin-top:5px;">
+        💵 ₱${payBreak.cash.toLocaleString()} · 💳 ₱${payBreak.card.toLocaleString()} · 📱 ₱${payBreak.gcash.toLocaleString()} · 📲 ₱${payBreak.paymaya.toLocaleString()}
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function init(){renderLogin();}
 init();
 </script>
+<div id="print-daily-report" style="display:none;"></div>
 </body>
 </html>
