@@ -1740,9 +1740,21 @@ function renderEOD(){
 function fmt12Time(iso){if(!iso)return'';const d=new Date(iso);const h=d.getHours();const m=d.getMinutes();return`${h>12?h-12:h||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;}
 function calcEOD(){const exp=parseFloat(document.getElementById('eod-expected').textContent.replace(/[₱,]/g,''))||0;const fl=parseFloat(document.getElementById('eod-float').value)||0;const act=parseFloat(document.getElementById('eod-actual').value)||0;const el=document.getElementById('eod-diff');if(!document.getElementById('eod-actual').value){el.textContent='—';el.className='eod-val';return;}const diff=act-(exp+fl);el.textContent=(diff>=0?'+':'')+'₱'+diff.toLocaleString();el.className='eod-val '+(Math.abs(diff)<50?'ok2':'err2');}
 async function submitEOD(){
-  const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;const today=filterTxns('today',bid);const rev=today.reduce((a,t)=>a+t.total,0);const cash=today.filter(t=>t.payMethod==='cash').reduce((a,t)=>a+t.total,0);
+  const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
+  const today=filterTxns('today',bid);
+  const rev=today.reduce((a,t)=>a+t.total,0);
+  const cash=today.filter(t=>t.payMethod==='cash').reduce((a,t)=>a+t.total,0);
   const payload={action:'addEOD',date:new Date().toLocaleDateString('en-PH'),branch:currentBranch?currentBranch.name:'',transactions:today.length,totalRevenue:rev,cashRevenue:cash,openingFloat:parseFloat(document.getElementById('eod-float').value)||0,actualCash:parseFloat(document.getElementById('eod-actual').value)||0,difference:(parseFloat(document.getElementById('eod-actual').value)||0)-(cash+(parseFloat(document.getElementById('eod-float').value)||0)),totalDiscounts:today.reduce((a,t)=>a+(t.discount||0),0),totalCommissions:today.reduce((a,t)=>a+(t.commission||0),0),totalTransport:today.reduce((a,t)=>a+(t.transport||0),0)};
-  if(settings.scriptUrl){try{await fetch(settings.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});alert('EOD synced ✓');}catch(e){alert('Sync failed — saved locally.');}}else alert('EOD recorded locally.');
+  if(!settings.scriptUrl){
+    alert('⚠️ Google Sheets is not configured.\n\nYour EOD data is saved locally on this device.\n\nTo sync remotely, go to Settings and add your Google Apps Script URL.');
+    return;
+  }
+  try{
+    await fetch(settings.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+    alert('✓ End of Day report synced to Google Sheets successfully!');
+  }catch(e){
+    alert('⚠️ Could not reach Google Sheets. Check your internet connection.\n\nYour data is saved locally on this device.');
+  }
 }
 
 // ================================================================
@@ -1773,7 +1785,13 @@ function renderSettingsPage(){
   document.getElementById('vat-toggle').className='tgl '+(settings.vatEnabled?'on':'off');
   document.getElementById('vat-rate-row').style.display=settings.vatEnabled?'flex':'none';
   const ls=ld('hhh_last_sync',null);
-  document.getElementById('sync-status-text').textContent=settings.scriptUrl?(ls?'Last synced: '+new Date(ls).toLocaleString('en-PH'):'URL saved — not tested'):'Not configured';
+  if(!settings.scriptUrl){
+    document.getElementById('sync-status-text').textContent='⚠️ Not configured — transactions save locally only';
+  } else if(ls){
+    document.getElementById('sync-status-text').textContent='✓ Last synced: '+new Date(ls).toLocaleString('en-PH');
+  } else {
+    document.getElementById('sync-status-text').textContent='URL saved — tap Test to verify connection';
+  }
   renderTherapistSettings();
   document.getElementById('pin-settings').innerHTML=Object.values(BRANCHES).map(b=>`<div class="settings-row"><div><div class="slabel">${b.icon} ${b.name}</div></div><input class="sinp" type="password" value="${b.pin}" style="width:70px;" onchange="updatePin('${b.id}',this.value)"></div>`).join('');
 }
@@ -1855,7 +1873,115 @@ function dismissSnapshot(){
 // ================================================================
 // DEMO MODE
 // ================================================================
-let isDemoMode=false;
+// ================================================================
+// GUIDED DEMO WALKTHROUGH
+// ================================================================
+let demoStep=0;
+const DEMO_STEPS=[
+  {title:'Welcome to Hilot POS',desc:'This guided demo shows you exactly how the system works. Tap Next to walk through checking in a client, starting a session, and checking out.',action:null,highlight:null},
+  {title:'Step 1 — Client Arrives',desc:'When a client walks in, type their name in the Name field on the right side. For returning clients, type their phone number to load their profile and loyalty stamps automatically.',action:'focus-ci',highlight:'ci-walkname'},
+  {title:'Step 2 — Select a Service',desc:'Tap a category tab (Body Treatments, Home Service, Add-Ons, Packages) then tap the service and duration the client wants. It highlights green when selected.',action:'demo-select-service',highlight:'ci-svc-list'},
+  {title:'Step 3 — Add-Ons',desc:'Tap the Add-Ons tab to add extras like Hot Stone, Ear Candling, or Portable Massage Bed. You can select as many as needed. Your main service stays selected.',action:'demo-show-addons',highlight:'ci-cats'},
+  {title:'Step 4 — Assign Therapist',desc:'Choose which therapist will perform the service from the dropdown. This tracks commissions automatically at 20% per session.',action:null,highlight:'ci-therapist'},
+  {title:'Step 5 — Start Session',desc:'Tap the green Start Session button. A session card appears on the left board with the client name, service, therapist, and a countdown timer.',action:'demo-start',highlight:'btn-start-session'},
+  {title:'Session Board',desc:'Every active client shows as a card with their own countdown timer. When a client wants more time, tap +30 min or +1 hr — pricing is calculated automatically.',action:'demo-show-session',highlight:'sessions-board'},
+  {title:'Step 6 — Extend Time',desc:'If a client wants 30 more minutes, tap +30 min. The timer updates instantly and the charge is added to their bill automatically — half the 60-min rate.',action:null,highlight:'sessions-board'},
+  {title:'Step 7 — Checkout',desc:'When the session ends, tap the Checkout → button on their card. A payment screen opens showing all charges, discounts, and payment methods.',action:'demo-checkout',highlight:'sessions-board'},
+  {title:'Step 8 — Payment',desc:'Select the payment method — Cash, Card, GCash, PayMaya, Gift Cert, or Loyalty Free for the 10th visit. For cash, enter the amount and change is calculated automatically.',action:null,highlight:null},
+  {title:'Step 9 — Receipt',desc:'Tap Confirm Payment. The receipt generates instantly showing all services, therapist, loyalty stamps, and payment details. Tap Print Receipt to print.',action:null,highlight:null},
+  {title:'Owner Dashboard',desc:'The HHH Corporate login shows all branches in real time — who is clocked in, how many clients are active, revenue per branch, and which branch is performing best today.',action:'demo-owner',highlight:null},
+  {title:'Reports & Pay Slips',desc:'Reports show revenue, sessions, and therapist commissions for any period. Pay Slips generate a printable weekly commission summary per therapist with signature lines.',action:'demo-reports',highlight:null},
+  {title:'Ready to Go!',desc:'This system runs entirely in your browser — no app to install, no monthly fees. Upload it to your GitHub once and every branch accesses it from any device.',action:null,highlight:null},
+];
+function startDemo(){
+  isDemoMode=true;demoStep=0;
+  currentBranch=BRANCHES.makati;
+  window._realTxns=transactions;window._realSessions=activeSessions;window._realClients=clients;
+  transactions=[...DEMO_TRANSACTIONS];
+  activeSessions=[...DEMO_SESSIONS];
+  clients={...DEMO_CLIENTS};
+  document.getElementById('pos-branch-title').textContent='Makati Branch (DEMO)';
+  document.getElementById('pos-date').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('sch-branch-sub').textContent='Makati Branch (DEMO)';
+  document.getElementById('appt-branch-sub').textContent='Makati Branch (DEMO)';
+  document.getElementById('sch-today-lbl').textContent=new Date().toLocaleDateString('en-PH',{weekday:'long',month:'short',day:'numeric'});
+  renderNavs();renderCIPanel();renderSessions();startTimerTick();
+  showScreen('screen-pos');
+  showDemoStep();
+}
+function showDemoStep(){
+  removeDemoOverlay();
+  if(demoStep>=DEMO_STEPS.length){exitDemo();return;}
+  const step=DEMO_STEPS[demoStep];
+  // Create overlay card
+  const overlay=document.createElement('div');
+  overlay.id='demo-overlay';
+  overlay.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);width:calc(100% - 28px);max-width:480px;background:var(--td);color:white;border-radius:14px;padding:16px 18px;z-index:500;box-shadow:0 8px 32px rgba(0,0,0,0.4);';
+  overlay.innerHTML=`
+    <div style="font-size:10px;opacity:0.6;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Demo — Step ${demoStep+1} of ${DEMO_STEPS.length}</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px;">${step.title}</div>
+    <div style="font-size:12px;opacity:0.85;line-height:1.5;margin-bottom:14px;">${step.desc}</div>
+    <div style="display:flex;gap:8px;justify-content:space-between;align-items:center;">
+      <button onclick="exitDemo()" style="padding:7px 14px;border:1px solid rgba(255,255,255,0.25);border-radius:20px;background:transparent;color:rgba(255,255,255,0.6);font-size:12px;cursor:pointer;">Exit Demo</button>
+      <div style="display:flex;gap:8px;">
+        ${demoStep>0?`<button onclick="prevDemoStep()" style="padding:7px 16px;border:1px solid rgba(255,255,255,0.3);border-radius:20px;background:transparent;color:white;font-size:12px;cursor:pointer;">← Back</button>`:''}
+        <button onclick="nextDemoStep()" style="padding:7px 20px;border:none;border-radius:20px;background:white;color:var(--td);font-size:13px;font-weight:700;cursor:pointer;">${demoStep===DEMO_STEPS.length-1?'Finish ✓':'Next →'}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  // Highlight target element
+  if(step.highlight){
+    const el=document.getElementById(step.highlight);
+    if(el){el.style.outline='3px solid #EF9F27';el.style.boxShadow='0 0 0 6px rgba(239,159,39,0.3)';el.style.borderRadius='6px';}
+  }
+  // Execute action
+  if(step.action) executeDemoAction(step.action);
+}
+function executeDemoAction(action){
+  if(action==='focus-ci'){
+    const el=document.getElementById('ci-walkname');if(el){el.focus();el.value='Maria Santos';}
+  } else if(action==='demo-select-service'){
+    // Auto-select Hilot Combination 60 min for demo
+    ciCategory='Body Treatments';
+    const svc=SERVICES.find(s=>s.id==='s4');
+    if(svc){ciSelectedServices=[{sid:'s4',label:'60 min',price:599,dur:60,name:svc.name,isAddon:false}];renderCIServices();updateCISelDisplay();checkCIReady();}
+  } else if(action==='demo-show-addons'){
+    setCICat('Add-Ons');document.querySelectorAll('.ci-cat').forEach(c=>{if(c.textContent==='Add-Ons')c.style.outline='3px solid #EF9F27';});
+  } else if(action==='demo-start'){
+    if(!document.getElementById('ci-walkname').value){document.getElementById('ci-walkname').value='Maria Santos';checkCIReady();}
+  } else if(action==='demo-show-session'){
+    showScreen('screen-pos');
+  } else if(action==='demo-checkout'){
+    showScreen('screen-pos');
+    // Highlight checkout button on first session
+    setTimeout(()=>{const btns=document.querySelectorAll('.btn-checkout');if(btns[0]){btns[0].style.outline='3px solid #EF9F27';btns[0].style.boxShadow='0 0 0 6px rgba(239,159,39,0.3)';}},200);
+  } else if(action==='demo-owner'){
+    currentBranch=BRANCHES.hhh;
+    transactions=[...DEMO_TRANSACTIONS,...transactions.filter(t=>!t.id.startsWith('DEMO'))];
+    renderNavs();showScreen('screen-owner');
+    currentBranch=BRANCHES.makati;
+  } else if(action==='demo-reports'){
+    showScreen('screen-reports');
+  }
+}
+function nextDemoStep(){removeDemoHighlight();demoStep++;showDemoStep();}
+function prevDemoStep(){removeDemoHighlight();demoStep--;showDemoStep();}
+function removeDemoHighlight(){
+  const step=DEMO_STEPS[demoStep];
+  if(step&&step.highlight){const el=document.getElementById(step.highlight);if(el){el.style.outline='';el.style.boxShadow='';el.style.borderRadius='';}}
+  document.querySelectorAll('.ci-cat').forEach(c=>{c.style.outline='';});
+  document.querySelectorAll('.btn-checkout').forEach(b=>{b.style.outline='';b.style.boxShadow='';});
+}
+function removeDemoOverlay(){const el=document.getElementById('demo-overlay');if(el)el.remove();removeDemoHighlight();}
+function exitDemo(){
+  removeDemoOverlay();
+  isDemoMode=false;demoStep=0;
+  transactions=window._realTxns||[];
+  activeSessions=window._realSessions||[];
+  clients=window._realClients||{};
+  currentBranch=null;stopTimerTick();
+  showScreen('screen-login');
+}
 const DEMO_TRANSACTIONS=[
   {id:'DEMO001',date:new Date(Date.now()-3600000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Maria Santos',clientPhone:'09171234567',therapist:'Ate Maria',items:[{name:'Hilot w/ Banana Leaves (90 min)',price:799,qty:1}],subtotal:799,transport:0,discount:0,discountPct:0,vat:0,total:799,commission:160,payMethod:'cash',tendered:800,change:1,sessionStartTime:Date.now()-7200000,durationMins:90,extensions:[]},
   {id:'DEMO002',date:new Date(Date.now()-7200000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Juan dela Cruz',clientPhone:'09181234567',therapist:'Kuya Juan',items:[{name:'Hilot Combination Massage (60 min)',price:599,qty:1},{name:'Hot Stone with Aroma Oil',price:300,qty:1}],subtotal:899,transport:0,discount:0,discountPct:0,vat:0,total:899,commission:180,payMethod:'gcash',tendered:899,change:0,sessionStartTime:Date.now()-9000000,durationMins:60,extensions:[]},
