@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -509,20 +508,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 </div>
 
 <!-- PAYSLIPS -->
-<div class="screen" id="screen-payslips">
-  <div class="tb"><div><div class="tt">Pay Slips</div><div class="ts" id="payslip-period-label"></div></div></div>
-  <div class="payslip-wrap">
-    <div class="payslip-period">
-      <button class="period-nav" onclick="changePayWeek(-1)">‹</button>
-      <div class="period-label" id="payslip-week-label">This Week</div>
-      <button class="period-nav" onclick="changePayWeek(1)">›</button>
-    </div>
-    <div id="payslip-list"></div>
-  </div>
-  <div class="bottom-nav" id="payslip-nav"></div>
-</div>
-<!-- Print area for pay slips -->
-<div class="print-only" id="print-slip-area"></div>
+<!-- Pay Slips screen removed -->
 
 <!-- SCHEDULE & CLOCK-IN -->
 <div class="screen" id="screen-schedule">
@@ -574,8 +560,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="mc"><div class="ml">Avg Sale</div><div class="mv" id="rpt-avg">₱0</div></div>
       <div class="mc"><div class="ml">Top Service</div><div class="mv" style="font-size:11px;" id="rpt-top">—</div></div>
     </div>
-    <div class="sh">Therapist Commissions</div>
-    <div id="therapist-report"></div>
     <div class="sh">Transactions</div>
     <div class="txn-list" id="txn-list"></div>
     <div style="margin-top:9px;display:flex;gap:8px;">
@@ -624,7 +608,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="eod-row"><span class="eod-label">Digital / Card</span><span class="eod-val" id="eod-digital">₱0</span></div>
       <div class="eod-row"><span class="eod-label">Transport Fees</span><span class="eod-val" id="eod-transport">₱0</span></div>
       <div class="eod-row"><span class="eod-label">Discounts Given</span><span class="eod-val" id="eod-disc" style="color:var(--coral);">₱0</span></div>
-      <div class="eod-row"><span class="eod-label">Commissions Owed</span><span class="eod-val" id="eod-comm" style="color:var(--amber);">₱0</span></div>
     </div>
     <div class="eod-sec">
       <div class="eod-title">Today's Attendance</div>
@@ -681,12 +664,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="settings-sec">
       <div class="settings-row"><div><div class="slabel">Branch Name</div></div><input class="sinp" id="set-branch-name" onchange="saveSettings()"></div>
       <div class="settings-row"><div><div class="slabel">Receipt Footer</div></div><input class="sinp" id="set-thanks" value="Salamat! Come again." onchange="saveSettings()"></div>
-    </div>
-    <div class="sh">Commission & Tax</div>
-    <div class="settings-sec">
-      <div class="settings-row"><div><div class="slabel">Commission Rate</div><div class="ssub">% of service + add-ons (transport excluded)</div></div><input class="sinp" type="number" id="set-commission" value="20" style="width:60px" onchange="saveSettings()">%</div>
-      <div class="settings-row"><div><div class="slabel">Apply VAT</div></div><button class="tgl off" id="vat-toggle" onclick="toggleVat()"><div class="tgl-thumb"></div></button></div>
-      <div class="settings-row" id="vat-rate-row" style="display:none"><div><div class="slabel">VAT Rate</div></div><input class="sinp" type="number" id="set-vat-rate" value="12" style="width:60px" onchange="saveSettings()">%</div>
     </div>
     <div class="sh">Therapists</div>
     <div class="settings-sec" id="therapist-settings-list"></div>
@@ -865,7 +842,7 @@ function getTherapists(bid){
 // STATE
 // ================================================================
 let currentBranch=null;
-let settings=ld('hhh_settings',{scriptUrl:'',thanks:'Salamat! Come again.',vatEnabled:false,vatRate:12,commissionRate:20});
+let settings=ld('hhh_settings',{scriptUrl:'',thanks:'Salamat! Come again.',vatEnabled:false,vatRate:12});
 let transactions=ld('hhh_transactions',[]);
 let clients=ld('hhh_clients',{});
 let giftCerts=ld('hhh_giftcerts',[]);
@@ -933,19 +910,19 @@ function navHTML(){
 <button class="nav-btn" onclick="showScreen('screen-appt')"><div class="nav-icon">📅</div><div class="nav-label">Appts</div></button>
 <button class="nav-btn" onclick="showScreen('screen-schedule')"><div class="nav-icon">🕐</div><div class="nav-label">Clock In</div></button>
 <button class="nav-btn" onclick="showScreen('screen-clients')"><div class="nav-icon">👥</div><div class="nav-label">Clients</div></button>
-<button class="nav-btn" onclick="showScreen('screen-payslips')"><div class="nav-icon">💵</div><div class="nav-label">Pay Slips</div></button>
 <button class="nav-btn" onclick="showScreen('screen-reports')"><div class="nav-icon">📊</div><div class="nav-label">Reports</div></button>
 <button class="nav-btn" onclick="showScreen('screen-gc')"><div class="nav-icon">🎁</div><div class="nav-label">Gift</div></button>
 <button class="nav-btn" onclick="showScreen('screen-eod')"><div class="nav-icon">💰</div><div class="nav-label">EOD</div></button>
 ${o?'<button class="nav-btn" onclick="showScreen(\'screen-owner\')"><div class="nav-icon">🏢</div><div class="nav-label">All</div></button>':''}
 <button class="nav-btn" onclick="showScreen('screen-settings')"><div class="nav-icon">⚙️</div><div class="nav-label">Settings</div></button>`;
 }
-function renderNavs(){['pos-nav','payslip-nav','schedule-nav','appt-nav','clients-nav','reports-nav','gc-nav','eod-nav','owner-nav','settings-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=navHTML();});}
+function renderNavs(){['pos-nav','schedule-nav','appt-nav','clients-nav','reports-nav','gc-nav','eod-nav','owner-nav','settings-nav'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=navHTML();});}
+
 function showScreen(id){
   if(id!=='screen-login'&&!currentBranch)return;
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const map={'screen-reports':renderReports,'screen-gc':renderGCList,'screen-eod':renderEOD,'screen-owner':renderOwnerDashboard,'screen-settings':renderSettingsPage,'screen-appt':renderAppts,'screen-clients':renderClients,'screen-schedule':renderSchedule,'screen-payslips':renderPayslips};
+  const map={'screen-reports':renderReports,'screen-gc':renderGCList,'screen-eod':renderEOD,'screen-owner':renderOwnerDashboard,'screen-settings':renderSettingsPage,'screen-appt':renderAppts,'screen-clients':renderClients,'screen-schedule':renderSchedule};
   if(map[id])map[id]();
 }
 
@@ -1244,7 +1221,6 @@ function getCoTotal(s){
   return Math.max(0,after+vat+(s.transport||0)+adj);
 }
 function getCoSubtotal(s){return s.price+(s.extensions||[]).reduce((a,e)=>a+e.price,0);}
-function getCoCommission(s){return Math.round(getCoSubtotal(s)*(settings.commissionRate||20)/100);}
 function renderCoLines(s){
   if(!s)return;
   const sub=getCoSubtotal(s);const disc=Math.round(sub*coDiscPct/100);const after=sub-disc;
@@ -1305,7 +1281,6 @@ async function confirmCheckout(){
   const total=getCoTotal(s);const sub=getCoSubtotal(s);
   const disc=Math.round(sub*coDiscPct/100);const after=sub-disc;
   const vat=settings.vatEnabled?Math.round(after*(settings.vatRate||12)/100):0;
-  const commission=getCoCommission(s);
   // Validate cash amount
   let recv=total;
   if(coPayMethod==='cash'){
@@ -1333,7 +1308,7 @@ async function confirmCheckout(){
     ],
     subtotal:sub,transport:s.transport||0,discount:disc,discountPct:coDiscPct,vat,
     managerAdj:adj||0,managerAdjNote:adjNote||'',
-    total,commission,
+    total,
     payMethod:coPayMethod,tendered:recv,change:coPayMethod==='cash'?recv-total:0,
     refNum:document.getElementById('co-ref').value||'',
     isBirthday:coPayMethod==='birthday',isLoyalty:coPayMethod==='loyalty',
@@ -1390,70 +1365,7 @@ function getWeekRange(offset){
   const sun=new Date(mon);sun.setDate(mon.getDate()+6);sun.setHours(23,59,59,999);
   return{start:mon,end:sun};
 }
-function changePayWeek(d){payWeekOffset+=d;renderPayslips();}
-function renderPayslips(){
-  const{start,end}=getWeekRange(payWeekOffset);
-  const label=start.toLocaleDateString('en-PH',{month:'short',day:'numeric'})+' – '+end.toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'});
-  document.getElementById('payslip-week-label').textContent=label;
-  document.getElementById('payslip-period-label').textContent='Week of '+start.toLocaleDateString('en-PH',{month:'long',day:'numeric'});
-  const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
-  const weekTxns=transactions.filter(t=>{if(bid&&t.branch!==bid)return false;const d=new Date(t.date);return d>=start&&d<=end;});
-  const bid2=currentBranch?currentBranch.id:'makati';
-  const therapists=getTherapists(bid2);
-  const el=document.getElementById('payslip-list');
-  if(!therapists.length){el.innerHTML='<div class="em">No therapists set up. Add therapists in Settings.</div>';return;}
-  const commRate=settings.commissionRate||20;
-  el.innerHTML=therapists.map(name=>{
-    const tTxns=weekTxns.filter(t=>t.therapist===name);
-    const revenue=tTxns.reduce((a,t)=>a+t.subtotal,0);
-    const commission=tTxns.reduce((a,t)=>a+(t.commission||0),0);
-    const sessions=tTxns.length;
-    if(sessions===0)return`<div class="therapist-slip"><div class="slip-header"><span class="slip-name">👤 ${name}</span><span class="slip-total" style="font-size:12px;opacity:0.7;">No sessions this week</span></div></div>`;
-    return`<div class="therapist-slip">
-      <div class="slip-header">
-        <span class="slip-name">👤 ${name}</span>
-        <div><div class="slip-total">₱${commission.toLocaleString()}</div><div style="font-size:10px;opacity:0.7;">${commRate}% commission</div></div>
-      </div>
-      <div class="slip-body">
-        <div class="slip-summary">
-          <div class="slip-metric"><div class="slip-metric-val">${sessions}</div><div class="slip-metric-label">Sessions</div></div>
-          <div class="slip-metric"><div class="slip-metric-val">₱${revenue.toLocaleString()}</div><div class="slip-metric-label">Revenue</div></div>
-          <div class="slip-metric"><div class="slip-metric-val">₱${commission.toLocaleString()}</div><div class="slip-metric-label">Commission</div></div>
-        </div>
-        <div style="margin-bottom:8px;">
-          ${tTxns.map(t=>{const d=new Date(t.date);return`<div class="slip-row"><span>${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})} ${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</span><span>${t.items[0]?t.items[0].name.substring(0,25):''}</span><span style="color:var(--tm);font-weight:600;">₱${(t.commission||0).toLocaleString()}</span></div>`;}).join('')}
-        </div>
-        <button class="btn-print-slip" onclick="printSlip('${name}','${label}')">🖨 Print Pay Slip</button>
-      </div>
-    </div>`;
-  }).join('');
-}
-function printSlip(name,period){
-  const{start,end}=getWeekRange(payWeekOffset);
-  const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
-  const weekTxns=transactions.filter(t=>{if(bid&&t.branch!==bid)return false;const d=new Date(t.date);return d>=start&&d<=end&&t.therapist===name;});
-  const revenue=weekTxns.reduce((a,t)=>a+t.subtotal,0);
-  const commission=weekTxns.reduce((a,t)=>a+(t.commission||0),0);
-  const commRate=settings.commissionRate||20;
-  const rows=weekTxns.map(t=>{const d=new Date(t.date);return`<tr><td>${d.toLocaleDateString('en-PH')}</td><td>${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})}</td><td>${t.clientName||'—'}</td><td>${t.items[0]?t.items[0].name:'—'}</td><td>₱${t.subtotal.toLocaleString()}</td><td>₱${(t.commission||0).toLocaleString()}</td></tr>`;}).join('');
-  document.getElementById('print-slip-area').innerHTML=`
-    <div class="print-slip-area">
-      <h2>Hilot Healing Hands — ${currentBranch?currentBranch.name:''}</h2>
-      <div class="meta"><b>Pay Slip</b> · ${period} · Prepared: ${new Date().toLocaleDateString('en-PH')}</div>
-      <div style="font-size:13px;margin-bottom:12px;"><b>Therapist:</b> ${name} &nbsp;|&nbsp; <b>Commission Rate:</b> ${commRate}%</div>
-      <table>
-        <thead><tr><th>Date</th><th>Time</th><th>Client</th><th>Service</th><th>Revenue</th><th>Commission</th></tr></thead>
-        <tbody>${rows}</tbody>
-        <tfoot><tr class="total-row"><td colspan="4"><b>TOTAL (${weekTxns.length} sessions)</b></td><td><b>₱${revenue.toLocaleString()}</b></td><td><b>₱${commission.toLocaleString()}</b></td></tr></tfoot>
-      </table>
-      <div class="sig-area">
-        <div class="sig-line">Prepared by: ___________________</div>
-        <div class="sig-line">Therapist Signature: ___________________</div>
-        <div class="sig-line">Date Received: ___________________</div>
-      </div>
-    </div>`;
-  window.print();
-}
+// Pay slips removed — commission-based salary discontinued
 
 // ================================================================
 // SCHEDULE & CLOCK-IN
@@ -1689,9 +1601,8 @@ function renderReports(){
   document.getElementById('rpt-txns').textContent=txns.length;
   document.getElementById('rpt-avg').textContent='₱'+Math.round(avg).toLocaleString();
   document.getElementById('rpt-top').textContent=top?top[0].substring(0,20):'—';
-  const tdata={};txns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0,commission:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;tdata[t.therapist].commission+=t.commission||0;});
-  const commRate=settings.commissionRate||20;
-  document.getElementById('therapist-report').innerHTML=Object.entries(tdata).length?`<div class="txn-list">${Object.entries(tdata).map(([n,d])=>`<div class="txn-item"><div><div class="txn-t">${n}</div><div class="txn-d">${d.sessions} session${d.sessions>1?'s':''} · ₱${d.revenue.toLocaleString()} revenue</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--tm);">₱${d.commission.toLocaleString()}</div><div style="font-size:9px;color:var(--t3);">${commRate}% comm.</div></div></div>`).join('')}</div>`:'<div class="em">No therapist data</div>';
+  const tdata={};txns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;});
+  document.getElementById('therapist-report')&&(document.getElementById('therapist-report').innerHTML=Object.entries(tdata).length?`<div class="txn-list">${Object.entries(tdata).map(([n,d])=>`<div class="txn-item"><div><div class="txn-t">${n}</div><div class="txn-d">${d.sessions} session${d.sessions>1?'s':''}</div></div><div class="txn-amt">₱${d.revenue.toLocaleString()}</div></div>`).join('')}</div>`:'<div class="em">No therapist data</div>');
   const le=document.getElementById('txn-list');
   if(!txns.length){le.innerHTML='<div class="em">No transactions</div>';return;}
   le.innerHTML=[...txns].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>{const d=new Date(t.date);const pm={cash:'💵',card:'💳',gcash:'📱',paymaya:'📲',giftcert:'🎁',loyalty:'⭐',birthday:'🎂'}[t.payMethod]||'';return`<div class="txn-item"><div><div class="txn-t">${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})} · ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}${currentBranch&&currentBranch.isOwner?' · '+t.branchName:''}</div><div class="txn-d">${t.items.map(i=>i.name.substring(0,20)).join(', ')}${t.transport>0?' + 🏠 ₱'+t.transport.toLocaleString():''}</div><div class="txn-d">${pm} ${t.payMethod}${t.therapist?' · '+t.therapist:''}${t.clientName?' · '+t.clientName:''}</div></div><div class="txn-amt">₱${t.total.toLocaleString()}</div></div>`;}).join('');
@@ -1737,7 +1648,6 @@ function renderEOD(){
   document.getElementById('eod-digital').textContent='₱'+(rev-cash).toLocaleString();
   document.getElementById('eod-transport').textContent='₱'+transport.toLocaleString();
   document.getElementById('eod-disc').textContent='₱'+today.reduce((a,t)=>a+(t.discount||0),0).toLocaleString();
-  document.getElementById('eod-comm').textContent='₱'+today.reduce((a,t)=>a+(t.commission||0),0).toLocaleString();
   const todayKey=new Date().toISOString().split('T')[0];
   const logs=ld('hhh_clocklogs_'+(bid||'makati'),[]).filter(l=>l.date===todayKey);
   const attEl=document.getElementById('eod-attendance');
@@ -1752,7 +1662,7 @@ async function submitEOD(){
   const today=filterTxns('today',bid);
   const rev=today.reduce((a,t)=>a+t.total,0);
   const cash=today.filter(t=>t.payMethod==='cash').reduce((a,t)=>a+t.total,0);
-  const payload={action:'addEOD',date:new Date().toLocaleDateString('en-PH'),branch:currentBranch?currentBranch.name:'',transactions:today.length,totalRevenue:rev,cashRevenue:cash,openingFloat:parseFloat(document.getElementById('eod-float').value)||0,actualCash:parseFloat(document.getElementById('eod-actual').value)||0,difference:(parseFloat(document.getElementById('eod-actual').value)||0)-(cash+(parseFloat(document.getElementById('eod-float').value)||0)),totalDiscounts:today.reduce((a,t)=>a+(t.discount||0),0),totalCommissions:today.reduce((a,t)=>a+(t.commission||0),0),totalTransport:today.reduce((a,t)=>a+(t.transport||0),0)};
+  const payload={action:'addEOD',date:new Date().toLocaleDateString('en-PH'),branch:currentBranch?currentBranch.name:'',transactions:today.length,totalRevenue:rev,cashRevenue:cash,openingFloat:parseFloat(document.getElementById('eod-float').value)||0,actualCash:parseFloat(document.getElementById('eod-actual').value)||0,difference:(parseFloat(document.getElementById('eod-actual').value)||0)-(cash+(parseFloat(document.getElementById('eod-float').value)||0)),totalDiscounts:today.reduce((a,t)=>a+(t.discount||0),0),totalTransport:today.reduce((a,t)=>a+(t.transport||0),0)};
   if(!settings.scriptUrl){
     alert('⚠️ Google Sheets is not configured.\n\nYour EOD data is saved locally on this device.\n\nTo sync remotely, go to Settings and add your Google Apps Script URL.');
     return;
@@ -1788,10 +1698,6 @@ function renderSettingsPage(){
   document.getElementById('set-script-url').value=settings.scriptUrl||'';
   document.getElementById('set-branch-name').value=currentBranch?currentBranch.name:'';
   document.getElementById('set-thanks').value=settings.thanks||'Salamat! Come again.';
-  document.getElementById('set-commission').value=settings.commissionRate||20;
-  document.getElementById('set-vat-rate').value=settings.vatRate||12;
-  document.getElementById('vat-toggle').className='tgl '+(settings.vatEnabled?'on':'off');
-  document.getElementById('vat-rate-row').style.display=settings.vatEnabled?'flex':'none';
   const ls=ld('hhh_last_sync',null);
   if(!settings.scriptUrl){
     document.getElementById('sync-status-text').textContent='⚠️ Not configured — transactions save locally only';
@@ -1806,8 +1712,6 @@ function renderSettingsPage(){
 function saveSettings(){
   settings.scriptUrl=(document.getElementById('set-script-url').value||'').trim();
   settings.thanks=document.getElementById('set-thanks').value;
-  settings.commissionRate=parseFloat(document.getElementById('set-commission').value)||20;
-  settings.vatRate=parseFloat(document.getElementById('set-vat-rate').value)||12;
   if(currentBranch)sv('hhh_settings_'+currentBranch.id,settings);else sv('hhh_settings',settings);
   updateSyncBadge();
 }
@@ -1821,7 +1725,7 @@ function updateSyncBadge(){const el=document.getElementById('sync-indicator');if
 async function syncToSheets(txn){
   if(!settings.scriptUrl)return false;
   try{
-    const payload={action:'addTransaction',receiptId:txn.id,date:new Date(txn.date).toLocaleDateString('en-PH'),time:new Date(txn.date).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),branch:txn.branchName,branchId:txn.branch,therapist:txn.therapist||'',clientName:txn.clientName||'',clientPhone:txn.clientPhone||'',items:txn.items.map(i=>`${i.name}`).join('; '),subtotal:txn.subtotal,transport:txn.transport||0,discount:txn.discount||0,discountPct:txn.discountPct||0,vat:txn.vat||0,total:txn.total,commission:txn.commission||0,payMethod:txn.payMethod,refNumber:txn.refNum||'',isBirthday:txn.isBirthday?'Yes':'',isLoyalty:txn.isLoyalty?'Yes':'',durationMins:txn.durationMins||0};
+    const payload={action:'addTransaction',receiptId:txn.id,date:new Date(txn.date).toLocaleDateString('en-PH'),time:new Date(txn.date).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),branch:txn.branchName,branchId:txn.branch,therapist:txn.therapist||'',clientName:txn.clientName||'',clientPhone:txn.clientPhone||'',items:txn.items.map(i=>`${i.name}`).join('; '),subtotal:txn.subtotal,transport:txn.transport||0,discount:txn.discount||0,discountPct:txn.discountPct||0,vat:txn.vat||0,total:txn.total,payMethod:txn.payMethod,refNumber:txn.refNum||'',isBirthday:txn.isBirthday?'Yes':'',isLoyalty:txn.isLoyalty?'Yes':'',durationMins:txn.durationMins||0};
     await fetch(settings.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     sv('hhh_last_sync',new Date().toISOString());updateSyncBadge();return true;
   }catch(e){return false;}
@@ -1835,8 +1739,8 @@ function exportCSV(){
   const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
   const txns=bid?transactions.filter(t=>t.branch===bid):transactions;
   if(!txns.length){alert('No transactions to export.');return;}
-  const rows=[['Receipt #','Date','Time','Branch','Therapist','Client','Service','Duration (min)','Subtotal','Transport','Discount%','Discount₱','VAT','Total','Commission','Payment','Birthday','Loyalty']];
-  txns.forEach(t=>{const d=new Date(t.date);rows.push([t.id,d.toLocaleDateString('en-PH'),d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),t.branchName||'',t.therapist||'',t.clientName||'',t.items[0]?t.items[0].name:'',t.durationMins||0,t.subtotal,t.transport||0,t.discountPct||0,t.discount||0,t.vat||0,t.total,t.commission||0,t.payMethod,t.isBirthday?'Yes':'',t.isLoyalty?'Yes':'']);});
+  const rows=[['Receipt #','Date','Time','Branch','Therapist','Client','Service','Duration (min)','Subtotal','Transport','Discount%','Discount₱','VAT','Total','Payment','Birthday','Loyalty']];
+  txns.forEach(t=>{const d=new Date(t.date);rows.push([t.id,d.toLocaleDateString('en-PH'),d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),t.branchName||'',t.therapist||'',t.clientName||'',t.items[0]?t.items[0].name:'',t.durationMins||0,t.subtotal,t.transport||0,t.discountPct||0,t.discount||0,t.vat||0,t.total,t.payMethod,t.isBirthday?'Yes':'',t.isLoyalty?'Yes':'']);});
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`hilot_${bid||'all'}_${new Date().toISOString().split('T')[0]}.csv`;a.click();
 }
@@ -1891,7 +1795,7 @@ const DEMO_STEPS=[
   {title:'Step 1 — Client Arrives',desc:'When a client walks in, type their name in the Name field on the right side. For returning clients, type their phone number to load their profile and loyalty stamps automatically.',action:'focus-ci',highlight:'ci-walkname'},
   {title:'Step 2 — Select a Service',desc:'Tap a category tab (Body Treatments, Home Service, Add-Ons, Packages) then tap the service and duration the client wants. It highlights green when selected.',action:'demo-select-service',highlight:'ci-svc-list'},
   {title:'Step 3 — Add-Ons',desc:'Tap the Add-Ons tab to add extras like Hot Stone, Ear Candling, or Portable Massage Bed. You can select as many as needed. Your main service stays selected.',action:'demo-show-addons',highlight:'ci-cats'},
-  {title:'Step 4 — Assign Therapist',desc:'Choose which therapist will perform the service from the dropdown. This tracks commissions automatically at 20% per session.',action:null,highlight:'ci-therapist'},
+  {title:'Step 4 — Assign Therapist',desc:'Choose which therapist will perform the service from the dropdown. The therapist name appears on the session card, receipt, and daily reports.',action:null,highlight:'ci-therapist'},
   {title:'Step 5 — Start Session',desc:'Tap the green Start Session button. A session card appears on the left board with the client name, service, therapist, and a countdown timer.',action:'demo-start',highlight:'btn-start-session'},
   {title:'Session Board',desc:'Every active client shows as a card with their own countdown timer. When a client wants more time, tap +30 min or +1 hr — pricing is calculated automatically.',action:'demo-show-session',highlight:'sessions-board'},
   {title:'Step 6 — Extend Time',desc:'If a client wants 30 more minutes, tap +30 min. The timer updates instantly and the charge is added to their bill automatically — half the 60-min rate.',action:null,highlight:'sessions-board'},
@@ -1899,7 +1803,7 @@ const DEMO_STEPS=[
   {title:'Step 8 — Payment',desc:'Select the payment method — Cash, Card, GCash, PayMaya, Gift Cert, or Loyalty Free for the 10th visit. For cash, enter the amount and change is calculated automatically.',action:null,highlight:null},
   {title:'Step 9 — Receipt',desc:'Tap Confirm Payment. The receipt generates instantly showing all services, therapist, loyalty stamps, and payment details. Tap Print Receipt to print.',action:null,highlight:null},
   {title:'Owner Dashboard',desc:'The HHH Corporate login shows all branches in real time — who is clocked in, how many clients are active, revenue per branch, and which branch is performing best today.',action:'demo-owner',highlight:null},
-  {title:'Reports & Pay Slips',desc:'Reports show revenue, sessions, and therapist commissions for any period. Pay Slips generate a printable weekly commission summary per therapist with signature lines.',action:'demo-reports',highlight:null},
+  {title:'Reports',desc:'Reports show revenue, sessions, and therapist performance for any period — today, this week, this month, or all time. Export to CSV or print a formatted daily report.',action:'demo-reports',highlight:null},
   {title:'Ready to Go!',desc:'This system runs entirely in your browser — no app to install, no monthly fees. Upload it to your GitHub once and every branch accesses it from any device.',action:null,highlight:null},
 ];
 function showDemoStep(){
@@ -1976,12 +1880,12 @@ function exitDemo(){
   showScreen('screen-login');
 }
 const DEMO_TRANSACTIONS=[
-  {id:'DEMO001',date:new Date(Date.now()-3600000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Maria Santos',clientPhone:'09171234567',therapist:'Ate Maria',items:[{name:'Hilot w/ Banana Leaves (90 min)',price:799,qty:1}],subtotal:799,transport:0,discount:0,discountPct:0,vat:0,total:799,commission:160,payMethod:'cash',tendered:800,change:1,sessionStartTime:Date.now()-7200000,durationMins:90,extensions:[]},
-  {id:'DEMO002',date:new Date(Date.now()-7200000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Juan dela Cruz',clientPhone:'09181234567',therapist:'Kuya Juan',items:[{name:'Hilot Combination Massage (60 min)',price:599,qty:1},{name:'Hot Stone with Aroma Oil',price:300,qty:1}],subtotal:899,transport:0,discount:0,discountPct:0,vat:0,total:899,commission:180,payMethod:'gcash',tendered:899,change:0,sessionStartTime:Date.now()-9000000,durationMins:60,extensions:[]},
-  {id:'DEMO003',date:new Date(Date.now()-1800000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Rosa Reyes',clientPhone:'09191234567',therapist:'Aling Rosa',items:[{name:'Lymphatic Hilot Massage (90 min)',price:1499,qty:1}],subtotal:1499,transport:0,discount:179,discountPct:12,vat:0,total:1320,commission:264,payMethod:'cash',tendered:1400,change:80,sessionStartTime:Date.now()-5400000,durationMins:90,extensions:[]},
-  {id:'DEMO004',date:new Date(Date.now()-900000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Ana Gonzales',clientPhone:'09201234567',therapist:'Therapist A',items:[{name:'Hilot Swedish Massage (60 min)',price:599,qty:1}],subtotal:599,transport:0,discount:0,discountPct:0,vat:0,total:599,commission:120,payMethod:'card',tendered:599,change:0,sessionStartTime:Date.now()-4500000,durationMins:60,extensions:[]},
-  {id:'DEMO005',date:new Date(Date.now()-2700000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Pedro Lim',clientPhone:'09211234567',therapist:'Therapist B',items:[{name:'Special Package A',price:1849,qty:1}],subtotal:1849,transport:0,discount:0,discountPct:0,vat:0,total:1849,commission:370,payMethod:'gcash',tendered:1849,change:0,sessionStartTime:Date.now()-8100000,durationMins:120,extensions:[]},
-  {id:'DEMO006',date:new Date(Date.now()-5400000).toISOString(),branch:'siargao',branchName:'Siargao Branch',clientName:'Lani Cruz',clientPhone:'09221234567',therapist:'Therapist X',items:[{name:'Home Service (90 min)',price:849,qty:1},{name:'Portable Massage Bed',price:300,qty:1}],subtotal:1149,transport:150,discount:0,discountPct:0,vat:0,total:1299,commission:170,payMethod:'cash',tendered:1300,change:1,sessionStartTime:Date.now()-9000000,durationMins:90,extensions:[]}
+  {id:'DEMO001',date:new Date(Date.now()-3600000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Maria Santos',clientPhone:'09171234567',therapist:'Ate Maria',items:[{name:'Hilot w/ Banana Leaves (90 min)',price:799,qty:1}],subtotal:799,transport:0,discount:0,discountPct:0,vat:0,total:799,commission:0,payMethod:'cash',tendered:800,change:1,sessionStartTime:Date.now()-7200000,durationMins:90,extensions:[]},
+  {id:'DEMO002',date:new Date(Date.now()-7200000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Juan dela Cruz',clientPhone:'09181234567',therapist:'Kuya Juan',items:[{name:'Hilot Combination Massage (60 min)',price:599,qty:1},{name:'Hot Stone with Aroma Oil',price:300,qty:1}],subtotal:899,transport:0,discount:0,discountPct:0,vat:0,total:899,commission:0,payMethod:'gcash',tendered:899,change:0,sessionStartTime:Date.now()-9000000,durationMins:60,extensions:[]},
+  {id:'DEMO003',date:new Date(Date.now()-1800000).toISOString(),branch:'makati',branchName:'Makati Branch',clientName:'Rosa Reyes',clientPhone:'09191234567',therapist:'Aling Rosa',items:[{name:'Lymphatic Hilot Massage (90 min)',price:1499,qty:1}],subtotal:1499,transport:0,discount:179,discountPct:12,vat:0,total:1320,commission:0,payMethod:'cash',tendered:1400,change:80,sessionStartTime:Date.now()-5400000,durationMins:90,extensions:[]},
+  {id:'DEMO004',date:new Date(Date.now()-900000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Ana Gonzales',clientPhone:'09201234567',therapist:'Therapist A',items:[{name:'Hilot Swedish Massage (60 min)',price:599,qty:1}],subtotal:599,transport:0,discount:0,discountPct:0,vat:0,total:599,commission:0,payMethod:'card',tendered:599,change:0,sessionStartTime:Date.now()-4500000,durationMins:60,extensions:[]},
+  {id:'DEMO005',date:new Date(Date.now()-2700000).toISOString(),branch:'sanjuan',branchName:'San Juan Branch',clientName:'Pedro Lim',clientPhone:'09211234567',therapist:'Therapist B',items:[{name:'Special Package A',price:1849,qty:1}],subtotal:1849,transport:0,discount:0,discountPct:0,vat:0,total:1849,commission:0,payMethod:'gcash',tendered:1849,change:0,sessionStartTime:Date.now()-8100000,durationMins:120,extensions:[]},
+  {id:'DEMO006',date:new Date(Date.now()-5400000).toISOString(),branch:'siargao',branchName:'Siargao Branch',clientName:'Lani Cruz',clientPhone:'09221234567',therapist:'Therapist X',items:[{name:'Home Service (90 min)',price:849,qty:1},{name:'Portable Massage Bed',price:300,qty:1}],subtotal:1149,transport:150,discount:0,discountPct:0,vat:0,total:1299,commission:0,payMethod:'cash',tendered:1300,change:1,sessionStartTime:Date.now()-9000000,durationMins:90,extensions:[]}
 ];
 const DEMO_SESSIONS=[
   {id:'DSES001',branch:'makati',branchName:'Makati Branch',clientName:'Carlo Mendoza',clientPhone:'09301234567',serviceId:'s2',serviceName:'Hilot Swedish Massage',priceLabel:'90 min',price:799,primaryPrice:799,addons:[],serviceDisplay:'Hilot Swedish Massage (90 min)',duration:90,therapist:'Ate Maria',transport:0,isHome:false,startTime:Date.now()-2400000,extensions:[],date:new Date().toISOString()},
@@ -2049,11 +1953,10 @@ function printDailyReport(){
   const digital=rev-cash;
   const transport=todayTxns.reduce((a,t)=>a+(t.transport||0),0);
   const disc=todayTxns.reduce((a,t)=>a+(t.discount||0),0);
-  const comm=todayTxns.reduce((a,t)=>a+(t.commission||0),0);
   // Therapist breakdown
   const tdata={};
-  todayTxns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0,commission:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;tdata[t.therapist].commission+=t.commission||0;});
-  const therapistRows=Object.entries(tdata).map(([name,d])=>`<tr><td>${name}</td><td>${d.sessions}</td><td>₱${d.revenue.toLocaleString()}</td><td class="highlight">₱${d.commission.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#888;">No therapist data</td></tr>';
+  todayTxns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;});
+  const therapistRows=Object.entries(tdata).map(([name,d])=>`<tr><td>${name}</td><td>${d.sessions}</td><td>₱${d.revenue.toLocaleString()}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#888;">No therapist data</td></tr>';
   const txnRows=todayTxns.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>{
     const d=new Date(t.date);
     const pm={cash:'Cash',card:'Card',gcash:'GCash',paymaya:'PayMaya',giftcert:'Gift Cert',loyalty:'Loyalty',birthday:'Birthday'}[t.payMethod]||t.payMethod;
@@ -2070,8 +1973,8 @@ function printDailyReport(){
       <div class="summary-box"><div class="summary-val" style="color:#B85200;">₱${disc.toLocaleString()}</div><div class="summary-lbl">Discounts Given</div></div>
       <div class="summary-box"><div class="summary-val">₱${transport.toLocaleString()}</div><div class="summary-lbl">Transport Fees</div></div>
     </div>
-    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Commissions</h2>
-    <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th><th>Commission (${settings.commissionRate||20}%)</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td><td>₱${comm.toLocaleString()}</td></tr></tfoot></table>
+    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Sessions</h2>
+    <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td></tr></tfoot></table>
     <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Transaction Log</h2>
     <table><thead><tr><th>Time</th><th>Client</th><th>Service</th><th>Therapist</th><th>Payment</th><th>Total</th></tr></thead><tbody>${txnRows}</tbody></table>
     <div class="sig">
@@ -2120,7 +2023,6 @@ function renderOwnerDashboard(){
     const bt=filterTxns(ownerPeriod,bid);
     const br=bt.reduce((a,t)=>a+t.total,0);
     const ba=bt.length?Math.round(br/bt.length):0;
-    const bc=bt.reduce((a,t)=>a+(t.commission||0),0);
     const bTransport=bt.reduce((a,t)=>a+(t.transport||0),0);
     const pct=maxRev>0?Math.round((br/maxRev)*100):0;
     const svc={};bt.forEach(t=>t.items.forEach(i=>{svc[i.name]=(svc[i.name]||0)+1;}));
@@ -2145,7 +2047,7 @@ function renderOwnerDashboard(){
       </div>
       <div style="font-size:11px;color:var(--t2);display:flex;justify-content:space-between;flex-wrap:wrap;gap:3px;margin-top:5px;">
         <span>🏆 ${top?top[0].substring(0,22):'—'}</span>
-        <span style="color:var(--amber);">Commission: ₱${bc.toLocaleString()}</span>
+
         ${bTransport>0?`<span style="color:var(--amber-mid);">Transport: ₱${bTransport.toLocaleString()}</span>`:''}
       </div>
       <div style="font-size:10px;color:var(--t3);margin-top:5px;">
