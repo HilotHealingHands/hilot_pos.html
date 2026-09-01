@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -560,6 +561,8 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="mc"><div class="ml">Avg Sale</div><div class="mv" id="rpt-avg">₱0</div></div>
       <div class="mc"><div class="ml">Top Service</div><div class="mv" style="font-size:11px;" id="rpt-top">—</div></div>
     </div>
+    <div class="sh">Therapist Commissions</div>
+    <div id="therapist-report"></div>
     <div class="sh">Transactions</div>
     <div class="txn-list" id="txn-list"></div>
     <div style="margin-top:9px;display:flex;gap:8px;">
@@ -608,6 +611,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
       <div class="eod-row"><span class="eod-label">Digital / Card</span><span class="eod-val" id="eod-digital">₱0</span></div>
       <div class="eod-row"><span class="eod-label">Transport Fees</span><span class="eod-val" id="eod-transport">₱0</span></div>
       <div class="eod-row"><span class="eod-label">Discounts Given</span><span class="eod-val" id="eod-disc" style="color:var(--coral);">₱0</span></div>
+      <div class="eod-row"><span class="eod-label">Commissions Owed (7%)</span><span class="eod-val" id="eod-comm" style="color:var(--amber);">₱0</span></div>
     </div>
     <div class="eod-sec">
       <div class="eod-title">Today's Attendance</div>
@@ -664,6 +668,12 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
     <div class="settings-sec">
       <div class="settings-row"><div><div class="slabel">Branch Name</div></div><input class="sinp" id="set-branch-name" onchange="saveSettings()"></div>
       <div class="settings-row"><div><div class="slabel">Receipt Footer</div></div><input class="sinp" id="set-thanks" value="Salamat! Come again." onchange="saveSettings()"></div>
+    </div>
+    <div class="sh">Commission & Tax</div>
+    <div class="settings-sec">
+      <div class="settings-row"><div><div class="slabel">Commission Rate</div><div class="ssub">% of service + add-ons (transport excluded)</div></div><input class="sinp" type="number" id="set-commission" value="7" style="width:60px" onchange="saveSettings()">%</div>
+      <div class="settings-row"><div><div class="slabel">Apply VAT</div></div><button class="tgl off" id="vat-toggle" onclick="toggleVat()"><div class="tgl-thumb"></div></button></div>
+      <div class="settings-row" id="vat-rate-row" style="display:none"><div><div class="slabel">VAT Rate</div></div><input class="sinp" type="number" id="set-vat-rate" value="12" style="width:60px" onchange="saveSettings()">%</div>
     </div>
     <div class="sh">Therapists</div>
     <div class="settings-sec" id="therapist-settings-list"></div>
@@ -795,32 +805,34 @@ const DEFAULT_THERAPISTS={makati:['Angel','Angie','Belle','Beth','Bless','Dahlia
 // FULL SERVICE MENU — updated from price sheet
 // ================================================================
 const SERVICES=[
-  // Body Treatments
-  {id:'s1',name:'Hilot w/ Heated Banana Leaves',cat:'Body Treatments',icon:'🌿',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
-  {id:'s2',name:'Hilot Swedish Massage w/ Oil',cat:'Body Treatments',icon:'💆',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
-  {id:'s3',name:'Hilot Shiatsu (No Oil)',cat:'Body Treatments',icon:'👐',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
-  {id:'s4',name:'Hilot Combination Massage',cat:'Body Treatments',icon:'✨',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
-  {id:'s5',name:'Reflexology Foot and Hands',cat:'Body Treatments',icon:'🦶',prices:[{label:'60 min',price:599,dur:60},{label:'90 min',price:799,dur:90},{label:'120 min',price:1099,dur:120}]},
-  {id:'s6',name:'Lymphatic Hilot Massage',cat:'Body Treatments',icon:'💧',prices:[{label:'90 min',price:1499,dur:90},{label:'120 min',price:2199,dur:120}]},
-  {id:'s7',name:'Home Service',cat:'Home Service',icon:'🏠',prices:[{label:'90 min',price:849,dur:90},{label:'120 min',price:1149,dur:120}]},
-  // Add-Ons ₱300
-  {id:'a1',name:'Ventosa or Cupping',cat:'Add-Ons',icon:'🫙',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a2',name:'Hot Stone with Aroma Oil',cat:'Add-Ons',icon:'🪨',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a3',name:'Ear Candling',cat:'Add-Ons',icon:'🕯',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a4',name:'Yoni Steaming / Suob / Tuob',cat:'Add-Ons',icon:'🌸',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a5',name:"Mamay's Hilot Abdominal / Taas Matres",cat:'Add-Ons',icon:'🌺',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a6',name:'Scalp, Head & Neck Hilot',cat:'Add-Ons',icon:'😌',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a7',name:'Cranial / Face Lymphatic Hilot',cat:'Add-Ons',icon:'🧖',prices:[{label:'Add-on',price:300,dur:30}]},
-  {id:'a8',name:'Myo Fascial Release',cat:'Add-Ons',icon:'💪',prices:[{label:'Add-on',price:300,dur:30}]},
+  // Body Treatments — updated Sept 2026
+  {id:'s1',name:'Hilot w/ Heated Banana Leaves',cat:'Body Treatments',icon:'🌿',prices:[{label:'60 min',price:688,dur:60},{label:'90 min',price:888,dur:90},{label:'120 min',price:1188,dur:120}]},
+  {id:'s2',name:'Hilot Swedish Massage w/ Oil',cat:'Body Treatments',icon:'💆',prices:[{label:'60 min',price:688,dur:60},{label:'90 min',price:888,dur:90},{label:'120 min',price:1188,dur:120}]},
+  {id:'s3',name:'Hilot Shiatsu (No Oil)',cat:'Body Treatments',icon:'👐',prices:[{label:'60 min',price:688,dur:60},{label:'90 min',price:888,dur:90},{label:'120 min',price:1188,dur:120}]},
+  {id:'s4',name:'Hilot Combination — Hilot, Swedish, Shiatsu, Thai & Reflexology',cat:'Body Treatments',icon:'✨',prices:[{label:'60 min',price:688,dur:60},{label:'90 min',price:888,dur:90},{label:'120 min',price:1188,dur:120}]},
+  {id:'s5',name:'Reflexology — Foot & Hands Only',cat:'Body Treatments',icon:'🦶',prices:[{label:'60 min',price:688,dur:60},{label:'90 min',price:888,dur:90},{label:'120 min',price:1188,dur:120}]},
+  {id:'s6',name:'Lymphatic Hilot Massage',cat:'Body Treatments',icon:'💧',prices:[{label:'90 min',price:1588,dur:90},{label:'120 min',price:2288,dur:120}]},
+  // Home Service — updated Sept 2026
+  {id:'s7',name:'Home Service',cat:'Home Service',icon:'🏠',prices:[{label:'90 min',price:938,dur:90},{label:'120 min',price:1238,dur:120}]},
+  {id:'s8',name:'Lymphatic Hilot — Home Service',cat:'Home Service',icon:'💧',prices:[{label:'90 min',price:1638,dur:90},{label:'120 min',price:2338,dur:120}]},
+  // Add-Ons ₱388
+  {id:'a1',name:'Ventosa or Cupping',cat:'Add-Ons',icon:'🫙',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a2',name:'Hot Stone with Aroma Oil',cat:'Add-Ons',icon:'🪨',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a3',name:'Ear Candling',cat:'Add-Ons',icon:'🕯',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a4',name:'Yoni Steaming / Suob / Tuob',cat:'Add-Ons',icon:'🌸',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a5',name:"Mamay's Hilot Abdominal / Taas Matres",cat:'Add-Ons',icon:'🌺',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a6',name:'Scalp, Head & Neck Hilot Massage',cat:'Add-Ons',icon:'😌',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a7',name:'Cranial / Face Lymphatic Hilot',cat:'Add-Ons',icon:'🧖',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a8',name:'Myo Fascial Release',cat:'Add-Ons',icon:'💪',prices:[{label:'Add-on',price:388,dur:30}]},
   // Add-Ons other prices
-  {id:'a9',name:'Foot Spa with Reflexology',cat:'Add-Ons',icon:'🛁',prices:[{label:'Session',price:750,dur:45}]},
-  {id:'a10',name:'Body Organic Herbal Scrub',cat:'Add-Ons',icon:'🌿',prices:[{label:'Session',price:499,dur:45}]},
-  {id:'a11',name:'Kiddie Hilot Massage',cat:'Add-Ons',icon:'🧒',prices:[{label:'Session',price:449,dur:45}]},
-  {id:'a12',name:'Head, Scalp and Face Organic Spa',cat:'Add-Ons',icon:'💆',prices:[{label:'Session',price:1299,dur:60}]},
-  {id:'a13',name:'Portable Massage Bed',cat:'Add-Ons',icon:'🛏',prices:[{label:'Add-on',price:300,dur:0}]},
-  // Packages
-  {id:'p1',name:'Special Package A — 90min Hilot + Head/Scalp/Face Organic Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1849,dur:120}]},
-  {id:'p2',name:'Special Package B — 90min Hilot + 30min Aroma Foot Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1349,dur:120}]},
+  {id:'a9',name:'Foot Spa with Reflexology',cat:'Add-Ons',icon:'🛁',prices:[{label:'Session',price:888,dur:45}]},
+  {id:'a10',name:'Body Organic Herbal Scrub',cat:'Add-Ons',icon:'🌿',prices:[{label:'Session',price:588,dur:45}]},
+  {id:'a11',name:'Kiddie Hilot Massage',cat:'Add-Ons',icon:'🧒',prices:[{label:'Session',price:588,dur:45}]},
+  {id:'a12',name:'Head, Scalp and Face Organic Spa',cat:'Add-Ons',icon:'💆',prices:[{label:'Session',price:1388,dur:60}]},
+  {id:'a13',name:'Portable Massage Bed',cat:'Add-Ons',icon:'🛏',prices:[{label:'Add-on',price:388,dur:0}]},
+  // Packages — updated Sept 2026
+  {id:'p1',name:'Package A — 90min Hilot + Head/Scalp/Face Organic Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1888,dur:120}]},
+  {id:'p2',name:'Package B — 90min Hilot + 30min Aroma Foot Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1388,dur:120}]},
   // Extend
   {id:'ext',name:'Extension (+30 min)',cat:'Extension',icon:'⏰',prices:[{label:'+30 min',price:0,dur:30}]}, // price set dynamically
 ];
@@ -842,7 +854,7 @@ function getTherapists(bid){
 // STATE
 // ================================================================
 let currentBranch=null;
-let settings=ld('hhh_settings',{scriptUrl:'',thanks:'Salamat! Come again.',vatEnabled:false,vatRate:12});
+let settings=ld('hhh_settings',{scriptUrl:'',thanks:'Salamat! Come again.',vatEnabled:false,vatRate:12,commissionRate:7});
 let transactions=ld('hhh_transactions',[]);
 let clients=ld('hhh_clients',{});
 let giftCerts=ld('hhh_giftcerts',[]);
@@ -1221,6 +1233,7 @@ function getCoTotal(s){
   return Math.max(0,after+vat+(s.transport||0)+adj);
 }
 function getCoSubtotal(s){return s.price+(s.extensions||[]).reduce((a,e)=>a+e.price,0);}
+function getCoCommission(s){return Math.round(getCoSubtotal(s)*(settings.commissionRate||7)/100);}
 function renderCoLines(s){
   if(!s)return;
   const sub=getCoSubtotal(s);const disc=Math.round(sub*coDiscPct/100);const after=sub-disc;
@@ -1281,6 +1294,7 @@ async function confirmCheckout(){
   const total=getCoTotal(s);const sub=getCoSubtotal(s);
   const disc=Math.round(sub*coDiscPct/100);const after=sub-disc;
   const vat=settings.vatEnabled?Math.round(after*(settings.vatRate||12)/100):0;
+  const commission=getCoCommission(s);
   // Validate cash amount
   let recv=total;
   if(coPayMethod==='cash'){
@@ -1308,7 +1322,7 @@ async function confirmCheckout(){
     ],
     subtotal:sub,transport:s.transport||0,discount:disc,discountPct:coDiscPct,vat,
     managerAdj:adj||0,managerAdjNote:adjNote||'',
-    total,
+    total,commission,
     payMethod:coPayMethod,tendered:recv,change:coPayMethod==='cash'?recv-total:0,
     refNum:document.getElementById('co-ref').value||'',
     isBirthday:coPayMethod==='birthday',isLoyalty:coPayMethod==='loyalty',
@@ -1601,8 +1615,9 @@ function renderReports(){
   document.getElementById('rpt-txns').textContent=txns.length;
   document.getElementById('rpt-avg').textContent='₱'+Math.round(avg).toLocaleString();
   document.getElementById('rpt-top').textContent=top?top[0].substring(0,20):'—';
-  const tdata={};txns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;});
-  document.getElementById('therapist-report')&&(document.getElementById('therapist-report').innerHTML=Object.entries(tdata).length?`<div class="txn-list">${Object.entries(tdata).map(([n,d])=>`<div class="txn-item"><div><div class="txn-t">${n}</div><div class="txn-d">${d.sessions} session${d.sessions>1?'s':''}</div></div><div class="txn-amt">₱${d.revenue.toLocaleString()}</div></div>`).join('')}</div>`:'<div class="em">No therapist data</div>');
+  const tdata={};txns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0,commission:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;tdata[t.therapist].commission+=t.commission||0;});
+  const commRate=settings.commissionRate||7;
+  document.getElementById('therapist-report')&&(document.getElementById('therapist-report').innerHTML=Object.entries(tdata).length?`<div class="txn-list">${Object.entries(tdata).map(([n,d])=>`<div class="txn-item"><div><div class="txn-t">${n}</div><div class="txn-d">${d.sessions} session${d.sessions>1?'s':''} · ₱${d.revenue.toLocaleString()} revenue</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--tm);">₱${d.commission.toLocaleString()}</div><div style="font-size:9px;color:var(--t3);">${commRate}% comm.</div></div></div>`).join('')}</div>`:'<div class="em">No therapist data</div>');
   const le=document.getElementById('txn-list');
   if(!txns.length){le.innerHTML='<div class="em">No transactions</div>';return;}
   le.innerHTML=[...txns].sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>{const d=new Date(t.date);const pm={cash:'💵',card:'💳',gcash:'📱',paymaya:'📲',giftcert:'🎁',loyalty:'⭐',birthday:'🎂'}[t.payMethod]||'';return`<div class="txn-item"><div><div class="txn-t">${d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'})} · ${d.toLocaleDateString('en-PH',{month:'short',day:'numeric'})}${currentBranch&&currentBranch.isOwner?' · '+t.branchName:''}</div><div class="txn-d">${t.items.map(i=>i.name.substring(0,20)).join(', ')}${t.transport>0?' + 🏠 ₱'+t.transport.toLocaleString():''}</div><div class="txn-d">${pm} ${t.payMethod}${t.therapist?' · '+t.therapist:''}${t.clientName?' · '+t.clientName:''}</div></div><div class="txn-amt">₱${t.total.toLocaleString()}</div></div>`;}).join('');
@@ -1648,6 +1663,7 @@ function renderEOD(){
   document.getElementById('eod-digital').textContent='₱'+(rev-cash).toLocaleString();
   document.getElementById('eod-transport').textContent='₱'+transport.toLocaleString();
   document.getElementById('eod-disc').textContent='₱'+today.reduce((a,t)=>a+(t.discount||0),0).toLocaleString();
+  document.getElementById('eod-comm').textContent='₱'+today.reduce((a,t)=>a+(t.commission||0),0).toLocaleString();
   const todayKey=new Date().toISOString().split('T')[0];
   const logs=ld('hhh_clocklogs_'+(bid||'makati'),[]).filter(l=>l.date===todayKey);
   const attEl=document.getElementById('eod-attendance');
@@ -1662,7 +1678,7 @@ async function submitEOD(){
   const today=filterTxns('today',bid);
   const rev=today.reduce((a,t)=>a+t.total,0);
   const cash=today.filter(t=>t.payMethod==='cash').reduce((a,t)=>a+t.total,0);
-  const payload={action:'addEOD',date:new Date().toLocaleDateString('en-PH'),branch:currentBranch?currentBranch.name:'',transactions:today.length,totalRevenue:rev,cashRevenue:cash,openingFloat:parseFloat(document.getElementById('eod-float').value)||0,actualCash:parseFloat(document.getElementById('eod-actual').value)||0,difference:(parseFloat(document.getElementById('eod-actual').value)||0)-(cash+(parseFloat(document.getElementById('eod-float').value)||0)),totalDiscounts:today.reduce((a,t)=>a+(t.discount||0),0),totalTransport:today.reduce((a,t)=>a+(t.transport||0),0)};
+  const payload={action:'addEOD',date:new Date().toLocaleDateString('en-PH'),branch:currentBranch?currentBranch.name:'',transactions:today.length,totalRevenue:rev,cashRevenue:cash,openingFloat:parseFloat(document.getElementById('eod-float').value)||0,actualCash:parseFloat(document.getElementById('eod-actual').value)||0,difference:(parseFloat(document.getElementById('eod-actual').value)||0)-(cash+(parseFloat(document.getElementById('eod-float').value)||0)),totalDiscounts:today.reduce((a,t)=>a+(t.discount||0),0),totalCommissions:today.reduce((a,t)=>a+(t.commission||0),0),totalTransport:today.reduce((a,t)=>a+(t.transport||0),0)};
   if(!settings.scriptUrl){
     alert('⚠️ Google Sheets is not configured.\n\nYour EOD data is saved locally on this device.\n\nTo sync remotely, go to Settings and add your Google Apps Script URL.');
     return;
@@ -1698,6 +1714,10 @@ function renderSettingsPage(){
   document.getElementById('set-script-url').value=settings.scriptUrl||'';
   document.getElementById('set-branch-name').value=currentBranch?currentBranch.name:'';
   document.getElementById('set-thanks').value=settings.thanks||'Salamat! Come again.';
+  document.getElementById('set-commission').value=settings.commissionRate||7;
+  document.getElementById('set-vat-rate').value=settings.vatRate||12;
+  document.getElementById('vat-toggle').className='tgl '+(settings.vatEnabled?'on':'off');
+  document.getElementById('vat-rate-row').style.display=settings.vatEnabled?'flex':'none';
   const ls=ld('hhh_last_sync',null);
   if(!settings.scriptUrl){
     document.getElementById('sync-status-text').textContent='⚠️ Not configured — transactions save locally only';
@@ -1712,6 +1732,8 @@ function renderSettingsPage(){
 function saveSettings(){
   settings.scriptUrl=(document.getElementById('set-script-url').value||'').trim();
   settings.thanks=document.getElementById('set-thanks').value;
+  settings.commissionRate=parseFloat(document.getElementById('set-commission').value)||7;
+  settings.vatRate=parseFloat(document.getElementById('set-vat-rate').value)||12;
   if(currentBranch)sv('hhh_settings_'+currentBranch.id,settings);else sv('hhh_settings',settings);
   updateSyncBadge();
 }
@@ -1725,7 +1747,7 @@ function updateSyncBadge(){const el=document.getElementById('sync-indicator');if
 async function syncToSheets(txn){
   if(!settings.scriptUrl)return false;
   try{
-    const payload={action:'addTransaction',receiptId:txn.id,date:new Date(txn.date).toLocaleDateString('en-PH'),time:new Date(txn.date).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),branch:txn.branchName,branchId:txn.branch,therapist:txn.therapist||'',clientName:txn.clientName||'',clientPhone:txn.clientPhone||'',items:txn.items.map(i=>`${i.name}`).join('; '),subtotal:txn.subtotal,transport:txn.transport||0,discount:txn.discount||0,discountPct:txn.discountPct||0,vat:txn.vat||0,total:txn.total,payMethod:txn.payMethod,refNumber:txn.refNum||'',isBirthday:txn.isBirthday?'Yes':'',isLoyalty:txn.isLoyalty?'Yes':'',durationMins:txn.durationMins||0};
+    const payload={action:'addTransaction',receiptId:txn.id,date:new Date(txn.date).toLocaleDateString('en-PH'),time:new Date(txn.date).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),branch:txn.branchName,branchId:txn.branch,therapist:txn.therapist||'',clientName:txn.clientName||'',clientPhone:txn.clientPhone||'',items:txn.items.map(i=>`${i.name}`).join('; '),subtotal:txn.subtotal,transport:txn.transport||0,discount:txn.discount||0,discountPct:txn.discountPct||0,vat:txn.vat||0,total:txn.total,commission:txn.commission||0,payMethod:txn.payMethod,refNumber:txn.refNum||'',isBirthday:txn.isBirthday?'Yes':'',isLoyalty:txn.isLoyalty?'Yes':'',durationMins:txn.durationMins||0};
     await fetch(settings.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
     sv('hhh_last_sync',new Date().toISOString());updateSyncBadge();return true;
   }catch(e){return false;}
@@ -1739,8 +1761,8 @@ function exportCSV(){
   const bid=currentBranch&&!currentBranch.isOwner?currentBranch.id:null;
   const txns=bid?transactions.filter(t=>t.branch===bid):transactions;
   if(!txns.length){alert('No transactions to export.');return;}
-  const rows=[['Receipt #','Date','Time','Branch','Therapist','Client','Service','Duration (min)','Subtotal','Transport','Discount%','Discount₱','VAT','Total','Payment','Birthday','Loyalty']];
-  txns.forEach(t=>{const d=new Date(t.date);rows.push([t.id,d.toLocaleDateString('en-PH'),d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),t.branchName||'',t.therapist||'',t.clientName||'',t.items[0]?t.items[0].name:'',t.durationMins||0,t.subtotal,t.transport||0,t.discountPct||0,t.discount||0,t.vat||0,t.total,t.payMethod,t.isBirthday?'Yes':'',t.isLoyalty?'Yes':'']);});
+  const rows=[['Receipt #','Date','Time','Branch','Therapist','Client','Service','Duration (min)','Subtotal','Transport','Discount%','Discount₱','VAT','Total','Commission (7%)','Payment','Birthday','Loyalty']];
+  txns.forEach(t=>{const d=new Date(t.date);rows.push([t.id,d.toLocaleDateString('en-PH'),d.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),t.branchName||'',t.therapist||'',t.clientName||'',t.items[0]?t.items[0].name:'',t.durationMins||0,t.subtotal,t.transport||0,t.discountPct||0,t.discount||0,t.vat||0,t.total,t.commission||0,t.payMethod,t.isBirthday?'Yes':'',t.isLoyalty?'Yes':'']);});
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`hilot_${bid||'all'}_${new Date().toISOString().split('T')[0]}.csv`;a.click();
 }
@@ -1955,8 +1977,9 @@ function printDailyReport(){
   const disc=todayTxns.reduce((a,t)=>a+(t.discount||0),0);
   // Therapist breakdown
   const tdata={};
-  todayTxns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;});
-  const therapistRows=Object.entries(tdata).map(([name,d])=>`<tr><td>${name}</td><td>${d.sessions}</td><td>₱${d.revenue.toLocaleString()}</td></tr>`).join("")||'<tr><td colspan="3" style="color:#888;">No therapist data</td></tr>';
+  todayTxns.forEach(t=>{if(!t.therapist)return;if(!tdata[t.therapist])tdata[t.therapist]={sessions:0,revenue:0,commission:0};tdata[t.therapist].sessions++;tdata[t.therapist].revenue+=t.total;tdata[t.therapist].commission+=t.commission||0;});
+  const comm=todayTxns.reduce((a,t)=>a+(t.commission||0),0);const commRate=settings.commissionRate||7;
+  const therapistRows=Object.entries(tdata).map(([name,d])=>`<tr><td>${name}</td><td>${d.sessions}</td><td>₱${d.revenue.toLocaleString()}</td><td class="highlight">₱${d.commission.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#888;">No therapist data</td></tr>';
   const txnRows=todayTxns.sort((a,b)=>new Date(b.date)-new Date(a.date)).map(t=>{
     const d=new Date(t.date);
     const pm={cash:'Cash',card:'Card',gcash:'GCash',paymaya:'PayMaya',giftcert:'Gift Cert',loyalty:'Loyalty',birthday:'Birthday'}[t.payMethod]||t.payMethod;
@@ -1973,8 +1996,8 @@ function printDailyReport(){
       <div class="summary-box"><div class="summary-val" style="color:#B85200;">₱${disc.toLocaleString()}</div><div class="summary-lbl">Discounts Given</div></div>
       <div class="summary-box"><div class="summary-val">₱${transport.toLocaleString()}</div><div class="summary-lbl">Transport Fees</div></div>
     </div>
-    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Sessions</h2>
-    <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td></tr></tfoot></table>
+    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Commissions (%)</h2>
+    <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th><th>Commission</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td><td>₱${comm.toLocaleString()}</td></tr></tfoot></table>
     <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Transaction Log</h2>
     <table><thead><tr><th>Time</th><th>Client</th><th>Service</th><th>Therapist</th><th>Payment</th><th>Total</th></tr></thead><tbody>${txnRows}</tbody></table>
     <div class="sig">
