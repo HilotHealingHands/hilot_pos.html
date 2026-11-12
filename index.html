@@ -511,6 +511,10 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:1
 <!-- SCHEDULE & CLOCK-IN -->
 <div class="screen" id="screen-schedule">
   <div class="tb"><div><div class="tt">Schedule & Clock-In</div><div class="ts" id="sch-branch-sub"></div></div><div style="font-size:11px;color:white;opacity:0.7;" id="sch-today-lbl"></div></div>
+  <div style="display:flex;gap:8px;padding:10px 12px 0;">
+    <button onclick="printSchedule(0)" style="flex:1;padding:9px;border:1px solid var(--td);border-radius:6px;background:white;color:var(--td);font-size:12px;font-weight:600;cursor:pointer;">🖨 Print This Week</button>
+    <button onclick="printSchedule(1)" style="flex:1;padding:9px;border:1px solid var(--td);border-radius:6px;background:white;color:var(--td);font-size:12px;font-weight:600;cursor:pointer;">🖨 Print Next Week</button>
+  </div>
   <div class="schedule-wrap" id="schedule-list"></div>
   <div class="bottom-nav" id="schedule-nav"></div>
 </div>
@@ -801,6 +805,7 @@ const BRANCHES={
 };
 const GRACE_MINS=15;
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SCHED_DAYS=['Fri','Sat','Sun','Mon','Tue','Wed','Thu']; // schedule week runs Friday to Thursday
 const DEFAULT_THERAPISTS={makati:['Angel','Angie','Belle','Beth','Bless','Dahlia','Gemma','Lanie','Maricel','Matet','Nina','Ralyn','Rezel','Riza','Sharon'],sanjuan:['Therapist A','Therapist B','Therapist C'],siargao:['Therapist X','Therapist Y'],hhh:[]};
 
 // ================================================================
@@ -818,19 +823,19 @@ const SERVICES=[
   {id:'s7',name:'Home Service',cat:'Home Service',icon:'🏠',prices:[{label:'90 min',price:938,dur:90},{label:'120 min',price:1238,dur:120}]},
   {id:'s8',name:'Lymphatic Hilot — Home Service',cat:'Home Service',icon:'💧',prices:[{label:'90 min',price:1638,dur:90},{label:'120 min',price:2338,dur:120}]},
   // Add-Ons ₱388
-  {id:'a1',name:'Ventosa or Cupping',cat:'Add-Ons',icon:'🫙',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a2',name:'Hot Stone with Aroma Oil',cat:'Add-Ons',icon:'🪨',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a3',name:'Ear Candling',cat:'Add-Ons',icon:'🕯',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a4',name:'Yoni Steaming / Suob / Tuob',cat:'Add-Ons',icon:'🌸',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a5',name:"Mamay's Hilot Abdominal / Taas Matres",cat:'Add-Ons',icon:'🌺',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a6',name:'Scalp, Head & Neck Hilot Massage',cat:'Add-Ons',icon:'😌',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a7',name:'Cranial / Face Lymphatic Hilot',cat:'Add-Ons',icon:'🧖',prices:[{label:'Add-on',price:388,dur:30}]},
-  {id:'a8',name:'Myo Fascial Release',cat:'Add-Ons',icon:'💪',prices:[{label:'Add-on',price:388,dur:30}]},
+  {id:'a1',name:'Ventosa or Cupping',cat:'Add-Ons',icon:'🫙',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a2',name:'Hot Stone with Aroma Oil',cat:'Add-Ons',icon:'🪨',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a3',name:'Ear Candling',cat:'Add-Ons',icon:'🕯',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a4',name:'Yoni Steaming / Suob / Tuob',cat:'Add-Ons',icon:'🌸',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a5',name:"Mamay's Hilot Abdominal / Taas Matres",cat:'Add-Ons',icon:'🌺',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a6',name:'Scalp, Head & Neck Hilot Massage',cat:'Add-Ons',icon:'😌',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a7',name:'Cranial / Face Lymphatic Hilot',cat:'Add-Ons',icon:'🧖',prices:[{label:'Add-on',price:388,dur:0}]},
+  {id:'a8',name:'Myo Fascial Release',cat:'Add-Ons',icon:'💪',prices:[{label:'Add-on',price:388,dur:0}]},
   // Add-Ons other prices
-  {id:'a9',name:'Foot Spa with Reflexology',cat:'Add-Ons',icon:'🛁',prices:[{label:'Session',price:888,dur:45}]},
-  {id:'a10',name:'Body Organic Herbal Scrub',cat:'Add-Ons',icon:'🌿',prices:[{label:'Session',price:588,dur:45}]},
-  {id:'a11',name:'Kiddie Hilot Massage',cat:'Add-Ons',icon:'🧒',prices:[{label:'Session',price:588,dur:45}]},
-  {id:'a12',name:'Head, Scalp and Face Organic Spa',cat:'Add-Ons',icon:'💆',prices:[{label:'Session',price:1388,dur:60}]},
+  {id:'a9',name:'Foot Spa with Reflexology',cat:'Add-Ons',icon:'🛁',prices:[{label:'Session',price:888,dur:0}]},
+  {id:'a10',name:'Body Organic Herbal Scrub',cat:'Add-Ons',icon:'🌿',prices:[{label:'Session',price:588,dur:0}]},
+  {id:'a11',name:'Kiddie Hilot Massage',cat:'Add-Ons',icon:'🧒',prices:[{label:'Session',price:588,dur:0}]},
+  {id:'a12',name:'Head, Scalp and Face Organic Spa',cat:'Add-Ons',icon:'💆',prices:[{label:'Session',price:1388,dur:0}]},
   {id:'a13',name:'Portable Massage Bed',cat:'Add-Ons',icon:'🛏',prices:[{label:'Add-on',price:388,dur:0}]},
   // Packages — updated Sept 2026
   {id:'p1',name:'Package A — 90min Hilot + Head/Scalp/Face Organic Spa',cat:'Packages',icon:'🎁',prices:[{label:'Package',price:1888,dur:120}]},
@@ -1113,7 +1118,7 @@ function updateCISelDisplay(){
   const disp=document.getElementById('ci-sel-display');
   if(!ciSelectedServices.length){disp.style.display='none';disp.textContent='';return;}
   const total=ciSelectedServices.reduce((a,x)=>a+x.price,0);
-  const dur=ciSelectedServices.reduce((a,x)=>a+x.dur,0);
+  const mainSel=ciSelectedServices.find(x=>!x.isAddon);const dur=mainSel?mainSel.dur:0;
   disp.style.display='block';
   disp.innerHTML='✓ '+ciSelectedServices.map(x=>x.name+(x.label&&x.label!=='Add-on'&&x.label!=='Session'?' ('+x.label+')':'')).join(' + ')+` · ₱${total.toLocaleString()}${dur>0?' · '+dur+' min':''}`;
 }
@@ -1159,7 +1164,7 @@ function startSession(){
   const therapist=document.getElementById('ci-therapist').value;
   const transport=parseFloat(document.getElementById('ci-transport').value)||0;
   const totalPrice=ciSelectedServices.reduce((a,x)=>a+x.price,0);
-  const totalDur=ciSelectedServices.reduce((a,x)=>a+x.dur,0)||primarySvc.dur;
+  const totalDur=primarySvc.dur; // add-ons are flat rate and never add time
   const addons=ciSelectedServices.filter(x=>x.isAddon);
   const serviceDisplay=ciSelectedServices.map(x=>x.name+(x.label&&x.label!=='Add-on'&&x.label!=='Session'?' ('+x.label+')':'')).join(' + ');
   const session={
@@ -1428,7 +1433,7 @@ function renderSchedule(){
       <div class="sch-header"><span class="sch-name">👤 ${name}</span>${statusHtml}</div>
       <div class="sch-body">
         <div style="font-size:10px;color:var(--t3);margin-bottom:5px;">Working days:</div>
-        <div class="day-pills">${DAYS.map(d=>`<span class="dp${sch.days.includes(d)?' active':''}" onclick="toggleDay('${name}','${d}')">${d}</span>`).join('')}</div>
+        <div class="day-pills">${SCHED_DAYS.map(d=>`<span class="dp${sch.days.includes(d)?' active':''}" onclick="toggleDay('${name}','${d}')">${d}</span>`).join('')}</div>
         <div class="shift-times">
           <span style="font-size:10px;color:var(--t3);">Shift:</span>
           <input type="time" class="time-inp" value="${sch.startTime||'09:00'}" onchange="updateShiftTime('${name}','start',this.value)">
@@ -1464,6 +1469,55 @@ function clockOut(name){
   renderSchedule();
 }
 async function syncClockEvent(data){if(!settings.scriptUrl)return;try{await fetch(settings.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify(data)});}catch(e){}}
+
+
+// ================================================================
+// PRINTABLE WEEKLY SCHEDULE (week runs Friday to Thursday)
+// ================================================================
+function fmtShiftTime(t){
+  if(!t)return '';
+  const [h,m]=t.split(':').map(Number);
+  return (h%12===0?12:h%12)+':'+String(m).padStart(2,'0')+' '+(h>=12?'PM':'AM');
+}
+function getSchedWeekStart(weekOffset){
+  const today=new Date();today.setHours(0,0,0,0);
+  const sinceFri=(today.getDay()+2)%7; // Fri=0, Sat=1, Sun=2 ... Thu=6
+  const start=new Date(today);
+  start.setDate(today.getDate()-sinceFri+(weekOffset||0)*7);
+  return start;
+}
+function printSchedule(weekOffset){
+  const bid=currentBranch?currentBranch.id:'makati';
+  const therapists=getTherapists(bid);
+  if(!therapists.length){alert('No therapists yet. Add them in Settings first.');return;}
+  const schedules=getSchedules();
+  const start=getSchedWeekStart(weekOffset);
+  const end=new Date(start);end.setDate(start.getDate()+6);
+  const dates=SCHED_DAYS.map((d,i)=>{const x=new Date(start);x.setDate(start.getDate()+i);return x;});
+  const range=start.toLocaleDateString('en-PH',{month:'long',day:'numeric'})+' to '+end.toLocaleDateString('en-PH',{month:'long',day:'numeric',year:'numeric'});
+  const head=SCHED_DAYS.map((d,i)=>`<th style="text-align:center;">${d}<br><span style="font-weight:normal;font-size:10px;">${dates[i].toLocaleDateString('en-PH',{month:'short',day:'numeric'})}</span></th>`).join('');
+  const rows=therapists.map(name=>{
+    const sch=schedules[name]||{days:[],startTime:'09:00',endTime:'18:00'};
+    const shift=fmtShiftTime(sch.startTime||'09:00')+' - '+fmtShiftTime(sch.endTime||'18:00');
+    const cells=SCHED_DAYS.map(d=>sch.days.includes(d)?`<td style="text-align:center;">${shift}</td>`:`<td style="text-align:center;color:#999;background:#f5f5f5;">OFF</td>`).join('');
+    return `<tr><td style="font-weight:700;">${name}</td>${cells}</tr>`;
+  }).join('');
+  document.getElementById('print-daily-report').innerHTML=`
+    <h1>Hilot Healing Hands - ${currentBranch?currentBranch.name:''}</h1>
+    <h2>Weekly Therapist Schedule · ${range} · Printed ${new Date().toLocaleDateString('en-PH')}</h2>
+    <table><thead><tr><th>Therapist</th>${head}</tr></thead><tbody>${rows}</tbody></table>
+    <div style="font-size:10px;color:#888;margin-bottom:6px;">Schedule week runs Friday to Thursday. Arrive on time: clock-in is marked late after a 15 minute grace period.</div>
+    <div class="sig">
+      <div class="sig-line">Prepared by: ___________________</div>
+      <div class="sig-line">Manager Approval: ___________________</div>
+      <div class="sig-line">Date: ___________________</div>
+    </div>`;
+  const st=document.createElement('style');st.id='sched-page-style';
+  st.textContent='@page{size:landscape;margin:12mm;}';
+  document.head.appendChild(st);
+  window.addEventListener('afterprint',()=>{const e=document.getElementById('sched-page-style');if(e)e.remove();},{once:true});
+  window.print();
+}
 
 // ================================================================
 // APPOINTMENTS
@@ -2003,7 +2057,7 @@ function printDailyReport(){
       <div class="summary-box"><div class="summary-val" style="color:#B85200;">₱${disc.toLocaleString()}</div><div class="summary-lbl">Discounts Given</div></div>
       <div class="summary-box"><div class="summary-val">₱${transport.toLocaleString()}</div><div class="summary-lbl">Transport Fees</div></div>
     </div>
-    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Commissions (%)</h2>
+    <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Therapist Commissions (${settings.commissionRate||7}%)</h2>
     <table><thead><tr><th>Therapist</th><th>Sessions</th><th>Revenue</th><th>Commission</th></tr></thead><tbody>${therapistRows}</tbody><tfoot><tr style="font-weight:700;background:#f5f5f5;"><td>TOTAL</td><td>${todayTxns.length}</td><td>₱${rev.toLocaleString()}</td><td>₱${comm.toLocaleString()}</td></tr></tfoot></table>
     <h2 style="font-weight:700;color:#085041;font-size:13px;margin-bottom:6px;">Transaction Log</h2>
     <table><thead><tr><th>Time</th><th>Client</th><th>Service</th><th>Therapist</th><th>Payment</th><th>Total</th></tr></thead><tbody>${txnRows}</tbody></table>
